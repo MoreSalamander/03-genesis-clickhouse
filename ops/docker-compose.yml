@@ -9,6 +9,7 @@ name: genesis-institutional
 services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.8-alpine
+    restart: unless-stopped
     environment:
       CLICKHOUSE_DB: genesis_institutional
       CLICKHOUSE_USER: genesis            # writer — seeder + ingest only, never MCP
@@ -32,6 +33,7 @@ services:
     # the VERIFIED runtime-proof path for the track. Connects as the read-only
     # `mcp` user; agents reach ClickHouse exclusively through this server.
     build: ./mcp-clickhouse
+    restart: unless-stopped
     environment:
       CLICKHOUSE_HOST: clickhouse
       CLICKHOUSE_PORT: "8123"
@@ -53,6 +55,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: genesis
       POSTGRES_PASSWORD: genesis
@@ -63,16 +66,19 @@ services:
 
   nats:
     image: nats:2.10-alpine
+    restart: unless-stopped
     command: ["-js"]
     ports: ["4225:4222"]
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports: ["6382:6379"]
 
   minio:
     # 03's own evidence-object store (host :9010/:9011 — :9000 belongs to 01's stack)
     image: minio/minio:latest
+    restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -83,6 +89,7 @@ services:
 
   temporal:
     image: temporalio/auto-setup:1.25.2
+    restart: unless-stopped
     environment:
       DB: postgres12
       DB_PORT: "5432"
@@ -94,6 +101,7 @@ services:
 
   temporal-ui:
     image: temporalio/ui:2.31.2
+    restart: unless-stopped
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_CORS_ORIGINS: http://localhost:8235

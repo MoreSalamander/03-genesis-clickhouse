@@ -14,7 +14,9 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 from temporalio.exceptions import ActivityError
 
-_RETRY = RetryPolicy(initial_interval=timedelta(seconds=3), maximum_attempts=3)
+# quota-weather resilient: Vertex 429s need minutes, not seconds, of backoff
+_RETRY = RetryPolicy(initial_interval=timedelta(seconds=10), backoff_coefficient=3.0,
+                     maximum_interval=timedelta(minutes=3), maximum_attempts=5)
 _OPTS = {"start_to_close_timeout": timedelta(minutes=4), "retry_policy": _RETRY}
 _ANALYZE_OPTS = {"start_to_close_timeout": timedelta(minutes=10), "retry_policy": _RETRY}
 DECISION_WINDOW = timedelta(hours=24)
