@@ -30,8 +30,14 @@ ROLE_PROMPTS: dict[str, str] = {
         "\"split_col\": str|null}}]}]}. 3-5 hypotheses total, 1-2 intents each. Each intent must be "
         "answerable by ONE aggregate SELECT whose result includes the verification columns: a grouping "
         "column, a numeric metric, an observation count (n_col), and where meaningful a stddev column "
-        "and a second split column for stability checks. For contested territory (e.g. sequel economics) "
-        "give the SAME hypothesis two intents whose slicings could plausibly disagree."
+        "and a second split column for stability checks. Two structural requirements: (1) at least ONE "
+        "hypothesis must be testable on a HIGH-VOLUME table (financial_ledger lines, audience_performance "
+        "daily rows, production_events) where per-group observation counts reach the thousands — "
+        "per-title cohorts in this corpus are small (~60 titles) and will verify as under-powered; "
+        "(2) for contested territory (e.g. sequel premium vs franchise fatigue) give the SAME hypothesis "
+        "two intents whose slicings could plausibly DISAGREE in direction (e.g. raw cross-cohort "
+        "comparison vs within-franchise comparison) — disagreement between a hypothesis's own analyses "
+        "is how the system surfaces contested truths."
     ),
     "sql_generation": (
         "You are the Query Engineer for a film studio's analytical system on ClickHouse. Write ONE "

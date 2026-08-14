@@ -76,7 +76,7 @@ class Settings:
         default_factory=lambda: os.getenv("TEMPORAL_TASK_QUEUE", "genesis-institutional-investigations").strip()
     )
     redis_url: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6382/0").strip())
-    minio_endpoint: str = field(default_factory=lambda: os.getenv("MINIO_ENDPOINT", "localhost:9000").strip())
+    minio_endpoint: str = field(default_factory=lambda: os.getenv("MINIO_ENDPOINT", "localhost:9010").strip())
     minio_access_key: str = field(default_factory=lambda: os.getenv("MINIO_ACCESS_KEY", "minioadmin").strip())
     minio_secret_key: str = field(default_factory=lambda: os.getenv("MINIO_SECRET_KEY", "minioadmin").strip())
     ingest_sources: str = field(default_factory=lambda: os.getenv("INGEST_SOURCES", "").strip())

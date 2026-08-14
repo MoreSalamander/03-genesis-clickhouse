@@ -1,7 +1,10 @@
 import { Simulation } from "@/lib/api";
 
+// dollar projections when the scenario scaled to a budget; ×multiples otherwise
 const money = (v: number | undefined) =>
-  v === undefined ? "—" : `$${(v / 1e6).toFixed(1)}M`;
+  v === undefined ? "—"
+    : Math.abs(v) >= 100_000 ? `$${(v / 1e6).toFixed(1)}M`
+    : `×${v.toFixed(2)}`;
 
 export function SimulationPanel({ sim }: { sim: Simulation }) {
   const base = sim.baseline;

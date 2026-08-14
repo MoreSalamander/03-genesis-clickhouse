@@ -1,0 +1,81 @@
+# Cloud Run service: Institutional Intelligence API + the official mcp-clickhouse
+# server as a private sidecar (the agents' runtime partner integration), pointing
+# at the hosted ClickHouse (Cloud or GCE VM — deploy-time decision; env swap only).
+# Deploy:
+#   gcloud run services replace ops/cloudrun/genesis-clickhouse-api.yaml --region us-central1
+#   gcloud run services add-iam-policy-binding genesis-clickhouse-api --region us-central1 \
+#     --member=allUsers --role=roles/run.invoker
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: genesis-clickhouse-api
+  labels:
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"   # keep warm: investigations run as background work
+        autoscaling.knative.dev/maxScale: "1"   # in-process working memory → single instance
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containers:
+        - name: api
+          image: us-central1-docker.pkg.dev/genesis-hackathon-2026/genesis/genesis-clickhouse-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CLICKHOUSE_MCP_URL
+              value: "http://127.0.0.1:8000/mcp"
+            - name: CLICKHOUSE_MCP_TOKEN
+              valueFrom:
+                secretKeyRef: { name: clickhouse-mcp-token, key: latest }
+            - name: GOOGLE_GENAI_USE_VERTEXAI
+              value: "true"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "genesis-hackathon-2026"
+            - name: GOOGLE_CLOUD_LOCATION
+              value: "global"
+            - name: GEMINI_MODEL
+              value: "gemini-flash-latest"
+            - name: GENESIS_DATA_DIR
+              value: "/tmp/genesis-data"
+            - name: GENESIS_SITE
+              value: "cloudrun"
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+        - name: mcp
+          # official mcp-clickhouse (built from ops/mcp-clickhouse, amd64)
+          image: us-central1-docker.pkg.dev/genesis-hackathon-2026/genesis/mcp-clickhouse:latest
+          env:
+            - name: CLICKHOUSE_HOST
+              valueFrom:
+                secretKeyRef: { name: clickhouse-host, key: latest }
+            - name: CLICKHOUSE_PORT
+              value: "8443"
+            - name: CLICKHOUSE_USER
+              value: "mcp"
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: clickhouse-mcp-password, key: latest }
+            - name: CLICKHOUSE_SECURE
+              value: "true"
+            - name: CLICKHOUSE_DATABASE
+              value: "genesis_institutional"
+            - name: CLICKHOUSE_MCP_SERVER_TRANSPORT
+              value: "http"
+            - name: CLICKHOUSE_MCP_BIND_HOST
+              value: "0.0.0.0"
+            - name: CLICKHOUSE_MCP_BIND_PORT
+              value: "8000"
+            - name: CLICKHOUSE_MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef: { name: clickhouse-mcp-token, key: latest }
+          resources:
+            limits:
+              cpu: "1"
+              memory: 256Mi
