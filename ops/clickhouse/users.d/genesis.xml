@@ -1,0 +1,19 @@
+<clickhouse>
+    <!-- Read-only profile for the MCP path: readonly=2 permits session settings
+         (clickhouse-connect sends them) while blocking every write and DDL. -->
+    <profiles>
+        <genesis_readonly>
+            <readonly>2</readonly>
+        </genesis_readonly>
+    </profiles>
+    <users>
+        <mcp>
+            <password>mcp-institutional</password>
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+            <profile>genesis_readonly</profile>
+            <quota>default</quota>
+        </mcp>
+    </users>
+</clickhouse>

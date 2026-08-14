@@ -1,0 +1,642 @@
+{
+ "queries": [
+  {
+   "key": "cohort_overrun_by_class",
+   "match": "sum(f.actual)/sum(f.planned)",
+   "columns": [
+    "budget_class",
+    "overrun_ratio",
+    "n",
+    "spend_std"
+   ],
+   "rows": [
+    [
+     "tentpole",
+     1.0998,
+     1840,
+     0.1336
+    ],
+    [
+     "mid",
+     1.0606,
+     4808,
+     0.0947
+    ],
+    [
+     "indie",
+     1.0318,
+     1048,
+     0.0757
+    ]
+   ]
+  },
+  {
+   "key": "sequel_opening_premium",
+   "match": "a.at < p2.released_at + 30",
+   "columns": [
+    "is_sequel",
+    "open_over_budget",
+    "n",
+    "ratio_std"
+   ],
+   "rows": [
+    [
+     0,
+     0.253,
+     47,
+     0.1342
+    ],
+    [
+     1,
+     0.4116,
+     10,
+     0.2118
+    ]
+   ]
+  },
+  {
+   "key": "sequel_franchise_decay",
+   "match": "p2.franchise != ''",
+   "columns": [
+    "is_sequel",
+    "tail_share",
+    "n",
+    "share_std"
+   ],
+   "rows": [
+    [
+     0,
+     0.3705,
+     10,
+     0.0428
+    ],
+    [
+     1,
+     0.2848,
+     10,
+     0.1088
+    ]
+   ]
+  },
+  {
+   "key": "release_window_seasonality",
+   "match": "if(toYear(a.at) >= 2021",
+   "columns": [
+    "release_window",
+    "daily_revenue",
+    "n",
+    "revenue_std",
+    "era"
+   ],
+   "rows": [
+    [
+     "Q1",
+     2498.91,
+     14400,
+     6188.29,
+     "post2021"
+    ],
+    [
+     "Q1",
+     8678.23,
+     14400,
+     20233.84,
+     "pre2021"
+    ],
+    [
+     "Q2",
+     9533.98,
+     36064,
+     25122.79,
+     "post2021"
+    ],
+    [
+     "Q2",
+     6132.0,
+     23040,
+     15277.9,
+     "pre2021"
+    ],
+    [
+     "Q3",
+     4695.16,
+     23040,
+     10138.77,
+     "post2021"
+    ],
+    [
+     "Q3",
+     6398.26,
+     14400,
+     15040.63,
+     "pre2021"
+    ],
+    [
+     "Q4",
+     5013.41,
+     28640,
+     11303.15,
+     "post2021"
+    ],
+    [
+     "Q4",
+     7319.32,
+     5920,
+     13936.47,
+     "pre2021"
+    ]
+   ]
+  },
+  {
+   "key": "overrun_schedule_coupling",
+   "match": "event_type = 'schedule_slip'",
+   "columns": [
+    "budget_class",
+    "avg_slip_days",
+    "n",
+    "slip_std"
+   ],
+   "rows": [
+    [
+     "tentpole",
+     104.21,
+     14,
+     37.14
+    ],
+    [
+     "mid",
+     63.86,
+     35,
+     29.75
+    ],
+    [
+     "indie",
+     35.87,
+     10,
+     17.5
+    ]
+   ]
+  },
+  {
+   "key": "scenario_cohort_windows",
+   "match": "p.budget_usd BETWEEN 10000000 AND 120000000",
+   "columns": [
+    "release_window",
+    "title",
+    "rev_multiple"
+   ],
+   "rows": [
+    [
+     "Q1",
+     "Crimson Meridian",
+     0.7398
+    ],
+    [
+     "Q1",
+     "Deep Signal 2",
+     0.891
+    ],
+    [
+     "Q1",
+     "Wild Vigil",
+     1.1208
+    ],
+    [
+     "Q1",
+     "Winterlight",
+     1.6895
+    ],
+    [
+     "Q1",
+     "Nebula Frontier 2",
+     1.8973
+    ],
+    [
+     "Q2",
+     "Iron Divide",
+     0.1303
+    ],
+    [
+     "Q2",
+     "Neon Summer",
+     0.5241
+    ],
+    [
+     "Q2",
+     "Broken Country",
+     0.6512
+    ],
+    [
+     "Q2",
+     "Electric Passage",
+     1.0216
+    ],
+    [
+     "Q2",
+     "Iron Tempest",
+     1.1845
+    ],
+    [
+     "Q2",
+     "Iron Tempest 2",
+     1.4077
+    ],
+    [
+     "Q2",
+     "Paper Kingdoms 2",
+     1.4387
+    ],
+    [
+     "Q2",
+     "Echo Protocol",
+     2.0508
+    ],
+    [
+     "Q2",
+     "Winterlight 2",
+     2.763
+    ],
+    [
+     "Q3",
+     "Shattered Garden",
+     0.3986
+    ],
+    [
+     "Q3",
+     "Quiet Vigil",
+     0.5902
+    ],
+    [
+     "Q3",
+     "Crimson Meridian 2",
+     0.8868
+    ],
+    [
+     "Q3",
+     "Quiet Empire",
+     0.9559
+    ],
+    [
+     "Q3",
+     "Broken Passage",
+     0.9931
+    ],
+    [
+     "Q3",
+     "Paper Kingdoms",
+     1.1279
+    ],
+    [
+     "Q3",
+     "Midnight Harbor",
+     1.1571
+    ],
+    [
+     "Q3",
+     "Midnight Harbor 2",
+     1.2328
+    ],
+    [
+     "Q3",
+     "Broken Horizon",
+     1.2623
+    ],
+    [
+     "Q3",
+     "Echo Protocol 2",
+     1.3196
+    ],
+    [
+     "Q3",
+     "Nebula Frontier",
+     1.4029
+    ],
+    [
+     "Q4",
+     "Golden Reckoning",
+     0.4434
+    ],
+    [
+     "Q4",
+     "Iron Orchard",
+     0.8675
+    ],
+    [
+     "Q4",
+     "Quiet Country",
+     1.4179
+    ],
+    [
+     "Q4",
+     "Deep Signal",
+     1.7018
+    ],
+    [
+     "Q4",
+     "Distant Machine",
+     1.8817
+    ]
+   ]
+  },
+  {
+   "key": "corpus_summary",
+   "match": "GROUP BY status ORDER BY n DESC",
+   "columns": [
+    "status",
+    "n",
+    "total_budget_m"
+   ],
+   "rows": [
+    [
+     "released",
+     57,
+     1864.8
+    ],
+    [
+     "in_production",
+     4,
+     178.3
+    ],
+    [
+     "cancelled",
+     1,
+     108.3
+    ]
+   ]
+  }
+ ],
+ "tables": [
+  {
+   "name": "audience_monthly",
+   "comment": "",
+   "total_rows": 9233,
+   "columns": [
+    {
+     "name": "project_id",
+     "column_type": "String"
+    },
+    {
+     "name": "month",
+     "column_type": "Date"
+    },
+    {
+     "name": "platform",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "views",
+     "column_type": "UInt64"
+    },
+    {
+     "name": "revenue",
+     "column_type": "Float64"
+    },
+    {
+     "name": "completion_sum",
+     "column_type": "Float64"
+    },
+    {
+     "name": "samples",
+     "column_type": "UInt64"
+    }
+   ]
+  },
+  {
+   "name": "audience_performance",
+   "comment": "",
+   "total_rows": 4353266,
+   "columns": [
+    {
+     "name": "project_id",
+     "column_type": "String"
+    },
+    {
+     "name": "title",
+     "column_type": "String"
+    },
+    {
+     "name": "at",
+     "column_type": "Date"
+    },
+    {
+     "name": "platform",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "territory",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "views",
+     "column_type": "UInt64"
+    },
+    {
+     "name": "completion",
+     "column_type": "Float32"
+    },
+    {
+     "name": "revenue",
+     "column_type": "Float64"
+    }
+   ]
+  },
+  {
+   "name": "distribution_events",
+   "comment": "",
+   "total_rows": 806,
+   "columns": [
+    {
+     "name": "project_id",
+     "column_type": "String"
+    },
+    {
+     "name": "at",
+     "column_type": "Date"
+    },
+    {
+     "name": "event_type",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "platform",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "territory",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "value",
+     "column_type": "Float64"
+    }
+   ]
+  },
+  {
+   "name": "financial_ledger",
+   "comment": "",
+   "total_rows": 7696,
+   "columns": [
+    {
+     "name": "project_id",
+     "column_type": "String"
+    },
+    {
+     "name": "at",
+     "column_type": "Date"
+    },
+    {
+     "name": "cost_center",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "category",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "planned",
+     "column_type": "Float64"
+    },
+    {
+     "name": "actual",
+     "column_type": "Float64"
+    }
+   ]
+  },
+  {
+   "name": "financial_monthly",
+   "comment": "",
+   "total_rows": 22656,
+   "columns": [
+    {
+     "name": "project_id",
+     "column_type": "String"
+    },
+    {
+     "name": "month",
+     "column_type": "Date"
+    },
+    {
+     "name": "cost_center",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "planned",
+     "column_type": "Float64"
+    },
+    {
+     "name": "actual",
+     "column_type": "Float64"
+    }
+   ]
+  },
+  {
+   "name": "ops_events",
+   "comment": "",
+   "total_rows": null,
+   "columns": [
+    {
+     "name": "at",
+     "column_type": "DateTime"
+    },
+    {
+     "name": "source",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "event",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "payload",
+     "column_type": "String"
+    }
+   ]
+  },
+  {
+   "name": "production_events",
+   "comment": "",
+   "total_rows": 367119,
+   "columns": [
+    {
+     "name": "project_id",
+     "column_type": "String"
+    },
+    {
+     "name": "at",
+     "column_type": "DateTime"
+    },
+    {
+     "name": "dept",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "event_type",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "metric",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "value",
+     "column_type": "Float64"
+    }
+   ]
+  },
+  {
+   "name": "projects",
+   "comment": "",
+   "total_rows": 62,
+   "columns": [
+    {
+     "name": "project_id",
+     "column_type": "String"
+    },
+    {
+     "name": "title",
+     "column_type": "String"
+    },
+    {
+     "name": "type",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "genre",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "budget_class",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "budget_usd",
+     "column_type": "Float64"
+    },
+    {
+     "name": "greenlit_at",
+     "column_type": "Date"
+    },
+    {
+     "name": "released_at",
+     "column_type": "Nullable(Date)"
+    },
+    {
+     "name": "release_window",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "is_sequel",
+     "column_type": "UInt8"
+    },
+    {
+     "name": "franchise",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "status",
+     "column_type": "LowCardinality(String)"
+    }
+   ]
+  }
+ ]
+}

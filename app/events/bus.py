@@ -1,0 +1,72 @@
+"""Institutional event contract (locked §2.12) — designed now for the Genesis OS
+federation; transport is NATS (genesis.institutional.events) + a JSONL audit trail."""
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+EVENT_NAMES = {
+    "investigation.started",
+    "investigation.completed",
+    "investigation.incomplete",
+    "analysis.executed",
+    "finding.verified",
+    "finding.weak",          # §2.3 defines WEAK; §2.12's event list omitted it — completed here
+    "finding.contested",
+    "finding.insufficient",
+    "simulation.completed",
+    "recommendation.created",
+    "authorization.decided",
+    "knowledge.promoted",
+}
+
+
+class EventBus:
+    """Event fabric: NATS publish + local JSONL audit trail.
+
+    NATS is part of the deployed stack (ops/docker-compose.yml). Publish failures
+    degrade to audit-log-only and are surfaced once — never silent, never fatal.
+    """
+
+    def __init__(self, data_dir: Path, nats_url: str = "", subject: str = "genesis.institutional.events"):
+        self.path = data_dir / "events.jsonl"
+        self._nats_url = nats_url
+        self._subject = subject
+        self._nats_warned = False
+
+    def emit(self, name: str, **payload) -> None:
+        if name not in EVENT_NAMES:
+            raise ValueError(f"Unknown event '{name}' — extend the contract first")
+        # payload first — the event name and timestamp can never be clobbered by kwargs
+        record = {**payload, "event": name, "at": datetime.now(timezone.utc).isoformat()}
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+        self._publish(record)
+
+    def _publish(self, record: dict) -> None:
+        if not self._nats_url:
+            return
+        try:
+            import asyncio
+
+            import nats
+
+            async def _pub():
+                nc = await nats.connect(self._nats_url, connect_timeout=2, max_reconnect_attempts=1)
+                await nc.publish(self._subject, json.dumps(record, ensure_ascii=False, default=str).encode())
+                await nc.flush(timeout=2)
+                await nc.close()
+
+            asyncio.run(_pub())
+        except Exception as err:
+            if not self._nats_warned:
+                print(f"[events] NATS publish failed ({err}) — DEGRADED: audit log only")
+                self._nats_warned = True
+
+    def tail(self, limit: int = 100) -> list[dict]:
+        if not self.path.exists():
+            return []
+        lines = self.path.read_text(encoding="utf-8").splitlines()[-limit:]
+        return [json.loads(line) for line in lines]
