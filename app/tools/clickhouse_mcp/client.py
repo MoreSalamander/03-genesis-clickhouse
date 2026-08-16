@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from app.config import Settings
+from app import runtime_proof
 from app.governance.sql_guard import ensure_select_only
 
 
@@ -105,12 +106,21 @@ class LiveClickHouseMCP:
                     # tool-level errors (bad SQL etc.) are semantic, not transport —
                     # surface them to the bounded-repair loop instead of retrying
                     raise QuerySemanticError(text or f"MCP tool {tool} returned an error")
+                # Proof lives here: a configured URL is not evidence, a returned
+                # call is. /status reports IDLE until this fires.
+                runtime_proof.record("clickhouse", "LIVE",
+                                     f"MCP tool '{tool}' returned from {self.url}")
                 return text
             except QuerySemanticError:
+                # A tool-level error still proves the substrate answered.
+                runtime_proof.record("clickhouse", "LIVE",
+                                     f"MCP tool '{tool}' answered from {self.url}")
                 raise
             except Exception as err:
                 last_err = err
                 time.sleep(1.0 + attempt)
+        runtime_proof.record("clickhouse", "DEGRADED",
+                             f"MCP call '{tool}' failed against {self.url} ({last_err})")
         raise ClickHouseUnavailable(f"ClickHouse MCP call '{tool}' failed: {last_err}")
 
     # -- verified tool surface ---------------------------------------------

@@ -34,7 +34,7 @@ class DataHubKnowledge:
                 # so this stays IDLE until an emit actually lands.
                 runtime_proof.record(
                     "datahub", "IDLE",
-                    f"client ready for {settings.datahub_gms_url}; nothing promoted yet")
+                    f"configured at {settings.datahub_gms_url} — not contacted yet")
             except ImportError:
                 print("[knowledge] acryl-datahub not importable — DataHub promotion disabled")
                 runtime_proof.record(

@@ -72,9 +72,13 @@ def _runtime_proof(settings) -> dict:
         "gemini": (("LIVE", f"credential present — narration via {settings.gemini_model}")
                    if settings.gemini_live
                    else ("MOCK", "no GOOGLE_API_KEY — deterministic mock narration")),
-        "clickhouse": (("LIVE", "ClickHouse MCP configured — queries run against the corpus")
+        # As with Grafana in 02: clickhouse_live only asserts a URL string is
+        # set. Only a returned MCP call (recorded in the client) upgrades this
+        # to LIVE, so a deployment pointed at an unreachable MCP endpoint cannot
+        # advertise the partner integration it is judged on.
+        "clickhouse": (("IDLE", f"MCP configured at {settings.clickhouse_mcp_url} — no query run yet")
                        if settings.clickhouse_live
-                       else ("MOCK", "no ClickHouse credentials — seeded fixture corpus")),
+                       else ("MOCK", "no ClickHouse MCP URL — seeded fixture corpus")),
         "temporal": ("IDLE", f"configured at {settings.temporal_address} — "
                              "no workflow dispatched yet this session"),
         "datahub": ("IDLE", f"configured at {settings.datahub_gms_url} — nothing promoted yet"),
