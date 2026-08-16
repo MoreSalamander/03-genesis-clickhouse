@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { AnalyticalQuery } from "@/lib/api";
+import { Sql } from "@/components/Sql";
+import { Note, cascade } from "@/lib/alive";
 
 function ResultTable({ query }: { query: AnalyticalQuery }) {
   if (query.rows.length === 0) return null;
@@ -32,9 +34,9 @@ export function QueryLedger({ queries }: { queries: AnalyticalQuery[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
   if (queries.length === 0) return <div className="hint">Waiting for the Query Engineer…</div>;
   return (
-    <div className="query-ledger">
-      {queries.map((query) => (
-        <div className="query-row" key={query.id}>
+    <div className="query-ledger alive-cascade">
+      {queries.map((query, i) => (
+        <div className="query-row" key={query.id} style={cascade(i)}>
           <div className="query-head" onClick={() => setOpenId(openId === query.id ? null : query.id)}>
             <span className="qid">{query.id}</span>
             <span className="purpose">{query.purpose.replace("canonical:", "")}</span>
@@ -48,8 +50,8 @@ export function QueryLedger({ queries }: { queries: AnalyticalQuery[] }) {
           </div>
           {openId === query.id && (
             <>
-              <div className="query-sql">{query.sql}</div>
-              {query.error ? <div className="error-note">{query.error}</div> : <ResultTable query={query} />}
+              <Sql sql={query.sql} />
+              {query.error ? <Note tone="bad">{query.error}</Note> : <ResultTable query={query} />}
             </>
           )}
         </div>

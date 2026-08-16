@@ -20,6 +20,19 @@
   --reject: #9c2b23;
   --mono: "SF Mono", "Cascadia Mono", "JetBrains Mono", ui-monospace, monospace;
   --serif: Georgia, "Times New Roman", serif;
+
+  /* The alive layer maps onto this console's palette (see alive.css).
+     The paper ledger stays still: its "alive" is ink that writes itself,
+     so --alive-glow is a faint ink wash, never a glow. */
+  --alive-accent: var(--accent);
+  --alive-ink: var(--ink);
+  --alive-muted: var(--ink-soft);
+  --alive-line: var(--rule);
+  --alive-glow: rgba(14, 107, 82, 0.09);
+  --alive-veil: rgba(246, 242, 234, 0.93);
+  --alive-ok: var(--verified);
+  --alive-warn: var(--contested);
+  --alive-bad: var(--reject);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -69,10 +82,6 @@ body {
 }
 .question-row button:hover { background: var(--accent); }
 .question-row button:disabled { background: var(--ink-faint); cursor: wait; }
-.error-note {
-  margin-top: 10px; padding: 10px 14px; border-left: 4px solid var(--reject);
-  background: #f6e4e2; font: 13px var(--mono); color: var(--reject);
-}
 
 /* stage rail */
 .stage-rail { display: flex; gap: 0; margin: 22px 0 26px; font: 11px var(--mono); }
@@ -109,7 +118,25 @@ body {
 .query-sql {
   font: 12px/1.6 var(--mono); background: var(--ink); color: #e8ecdf;
   padding: 14px 16px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+  margin: 0;
 }
+
+/* SQL syntax colors — tuned for the ink-dark block on paper, not for a neon IDE. */
+.sql-block { position: relative; }
+.sql-block .t-k { color: #7fd6b0; font-weight: 700; }   /* keyword  */
+.sql-block .t-f { color: #cfe3a8; }                     /* function */
+.sql-block .t-s { color: #e3c58c; }                     /* string   */
+.sql-block .t-n { color: #a6c8ea; }                     /* number   */
+.sql-block .t-c { color: #8d9484; font-style: italic; } /* comment  */
+.sql-block .t-p { color: #b6bfae; }                     /* punctuation */
+.sql-block .t-i { color: #e8ecdf; }                     /* identifier  */
+.sql-copy {
+  position: absolute; top: 8px; right: 10px; z-index: 1;
+  font: 700 10px var(--mono); letter-spacing: 0.12em; padding: 4px 9px;
+  color: #8d9484; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 2px; cursor: pointer;
+}
+.sql-copy:hover { color: #e8ecdf; border-color: rgba(255, 255, 255, 0.4); }
 .query-result { padding: 10px 14px; overflow-x: auto; }
 .query-result table { border-collapse: collapse; font: 12px var(--mono); }
 .query-result th, .query-result td {
@@ -134,6 +161,72 @@ body {
 .finding .stats { font: 11px var(--mono); color: var(--ink-faint); margin-top: 4px; }
 .finding .domain { font: 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); }
 
+/* CONTESTED as a split screen — the disagreement gets the loudest layout,
+   because preserving it (rather than resolving it) is the whole thesis. */
+.contested {
+  border: 1.5px solid var(--contested); background: var(--paper-raised);
+  margin-bottom: 14px;
+}
+.contested-head {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 14px 16px; border-bottom: 1px solid var(--rule);
+}
+.contested-head .domain {
+  font: 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint);
+}
+.contested-head .statement { font-size: 16px; font-weight: 700; margin-top: 2px; }
+.contested-split {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch;
+  background: var(--contested-soft);
+}
+@media (max-width: 820px) {
+  .contested-split { grid-template-columns: 1fr; }
+  .contested-split .versus { padding: 6px 0; }
+}
+.contested-split .versus {
+  display: flex; align-items: center; justify-content: center;
+  font: 700 11px var(--mono); letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--contested); padding: 0 14px;
+  border-left: 1px dashed var(--contested); border-right: 1px dashed var(--contested);
+}
+.contested-side { padding: 14px 16px; }
+.contested-side .side-head {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+}
+.contested-side .dir {
+  font: 700 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.contested-side.up .dir { color: var(--verified); }
+.contested-side.down .dir { color: var(--contested); }
+.contested-side .qid { font: 10px var(--mono); color: var(--ink-faint); }
+.contested-side .purpose { font-size: 13.5px; margin-top: 4px; }
+.contested-side .effect {
+  font: 700 26px var(--mono); margin-top: 8px; line-height: 1;
+}
+.contested-side.up .effect { color: var(--verified); }
+.contested-side.down .effect { color: var(--contested); }
+.contested-side .effect .lbl {
+  font: 400 10px var(--mono); text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-faint); margin-left: 8px;
+}
+.contested-side .n { font: 11px var(--mono); color: var(--ink-soft); margin-top: 4px; }
+.contested-side .reading {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule);
+}
+.contested-side .rlabel { font-weight: 700; font-size: 13.5px; }
+.contested-side .rstance {
+  font: 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--ink-soft); margin: 2px 0 6px;
+}
+.contested-side .rnarrative { font-size: 13px; color: var(--ink); }
+.preserved-seal {
+  padding: 11px 16px; font: 11.5px/1.5 var(--mono); color: var(--contested);
+  border-top: 1.5px solid var(--contested); background: var(--paper-raised);
+}
+.contested > .basis {
+  padding: 8px 16px 12px; font: 11px var(--mono); color: var(--ink-faint);
+}
+
 /* interpretations — side by side */
 .interp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
 .interp {
@@ -146,6 +239,54 @@ body {
 .interp .stance { font: 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); margin: 2px 0 8px; }
 .interp .narrative { font-size: 13.5px; color: var(--ink); }
 .interp .cites { font: 10.5px var(--mono); color: var(--ink-faint); margin-top: 8px; }
+
+/* Effect/noise gauge with the verification threshold marked (item 15) */
+.gauge { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.gauge-track {
+  position: relative; flex: 0 0 150px; height: 6px;
+  background: var(--paper-inset); border: 1px solid var(--rule); border-radius: 3px;
+}
+.gauge-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; }
+.gauge-fill.pass { background: var(--verified); }
+.gauge-fill.under { background: var(--weak); }
+.gauge-threshold {
+  position: absolute; top: -3px; bottom: -3px; width: 1.5px; background: var(--ink);
+}
+.gauge-threshold::after {
+  content: "1.0"; position: absolute; top: -13px; left: -8px;
+  font: 8.5px var(--mono); color: var(--ink-faint);
+}
+/* Marks the axis as log so a short bar at 3.6× is not read as linear. */
+.gauge-track::after {
+  content: "log"; position: absolute; right: -20px; top: -4px;
+  font: 8px var(--mono); color: var(--ink-faint);
+}
+.gauge-num { font: 10.5px var(--mono); }
+.gauge-num.pass { color: var(--verified); }
+.gauge-num.under { color: var(--weak); }
+
+/* P10–P90 distribution strip on a shared scale (item 14) */
+.dist { margin-bottom: 16px; }
+.dist-row { display: grid; grid-template-columns: 84px 1fr 76px; gap: 10px; align-items: center; margin-bottom: 7px; }
+.dist-label {
+  font: 10px var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft);
+}
+.dist-track {
+  position: relative; height: 14px;
+  background: var(--paper-inset); border: 1px solid var(--rule); border-radius: 2px;
+}
+.dist-band { position: absolute; top: 2px; bottom: 2px; border-radius: 2px; min-width: 2px; }
+.dist-band.base { background: color-mix(in srgb, var(--ink-soft) 38%, transparent); }
+.dist-band.alt { background: color-mix(in srgb, var(--accent) 38%, transparent); }
+.dist-median { position: absolute; top: -1px; bottom: -1px; width: 2px; }
+.dist-median.base { background: var(--ink-soft); }
+.dist-median.alt { background: var(--accent); }
+.dist-num { font: 700 12px var(--mono); text-align: right; }
+.dist-axis {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  margin-left: 94px; font: 9.5px var(--mono); color: var(--ink-faint);
+}
+.dist-axis-label { letter-spacing: 0.06em; }
 
 /* simulation */
 .sim-panel { border: 1px solid var(--rule); background: var(--paper-raised); padding: 16px 18px; }

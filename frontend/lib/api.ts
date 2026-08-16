@@ -1,3 +1,5 @@
+import type { RuntimeProof } from "@/lib/alive";
+
 // Typed client for the Institutional Intelligence API (via the runtime proxy).
 
 export interface SystemStatus {
@@ -6,6 +8,8 @@ export interface SystemStatus {
   clickhouse_live: boolean;
   gemini_live: boolean;
   investigations: number;
+  /** Substrate states for the runtime-proof footer (app/runtime_proof.py). */
+  runtime_proof?: RuntimeProof;
 }
 
 export interface Finding {

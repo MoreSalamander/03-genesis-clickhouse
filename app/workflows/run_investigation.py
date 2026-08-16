@@ -4,6 +4,7 @@ the entire loop in mock mode."""
 from __future__ import annotations
 
 from app.config import settings
+from app import runtime_proof
 from app.workflows.runtime import get_runtime
 
 
@@ -41,6 +42,8 @@ def _workflow_id(inv_id: str) -> str:
 def dispatch_investigation(inv_id: str) -> str:
     """Returns 'temporal' when the durable workflow started, else 'local'."""
     if settings.force_mock:
+        runtime_proof.record("temporal", "MOCK",
+                             "GENESIS_MOCK set — in-process execution by design")
         return "local"
     try:
         import asyncio
@@ -55,15 +58,21 @@ def dispatch_investigation(inv_id: str) -> str:
             )
 
         asyncio.run(go())
+        runtime_proof.record("temporal", "LIVE",
+                             f"durable workflow accepted at {settings.temporal_address}")
         return "temporal"
     except Exception as err:
         print(f"[workflow] Temporal dispatch failed ({err}) — DEGRADED: in-process execution")
+        runtime_proof.record("temporal", "DEGRADED",
+                             f"dispatch failed ({err}) — ran in-process instead")
         return "local"
 
 
 def dispatch_decision(inv_id: str, decision: str, note: str) -> str:
     """Signals the durable workflow's human boundary; 'local' on fallback."""
     if settings.force_mock:
+        runtime_proof.record("temporal", "MOCK",
+                             "GENESIS_MOCK set — in-process execution by design")
         return "local"
     try:
         import asyncio
@@ -76,7 +85,11 @@ def dispatch_decision(inv_id: str, decision: str, note: str) -> str:
             await handle.signal("studio_head_decision", args=[decision, note])
 
         asyncio.run(go())
+        runtime_proof.record("temporal", "LIVE",
+                             f"durable workflow accepted at {settings.temporal_address}")
         return "temporal"
     except Exception as err:
         print(f"[workflow] Temporal signal failed ({err}) — DEGRADED: in-process execution")
+        runtime_proof.record("temporal", "DEGRADED",
+                             f"signal failed ({err}) — handled in-process instead")
         return "local"

@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 
 from app.config import Settings
+from app import runtime_proof
 from app.models.institutional import Investigation, VerificationState
 
 TABLES = ["projects", "production_events", "financial_ledger",
@@ -29,8 +30,20 @@ class DataHubKnowledge:
                 from datahub.emitter.rest_emitter import DatahubRestEmitter
 
                 self._emitter = DatahubRestEmitter(gms_server=settings.datahub_gms_url)
+                # A constructed client proves configuration, not reachability —
+                # so this stays IDLE until an emit actually lands.
+                runtime_proof.record(
+                    "datahub", "IDLE",
+                    f"client ready for {settings.datahub_gms_url}; nothing promoted yet")
             except ImportError:
                 print("[knowledge] acryl-datahub not importable — DataHub promotion disabled")
+                runtime_proof.record(
+                    "datahub", "DEGRADED",
+                    "DATAHUB_GMS_URL is set but acryl-datahub is not installed")
+        else:
+            runtime_proof.record(
+                "datahub", "MOCK",
+                "no DATAHUB_GMS_URL (or GENESIS_MOCK set) — local graph store only")
 
     @property
     def available(self) -> bool:
@@ -130,6 +143,12 @@ class DataHubKnowledge:
                         ]),
                     ))
                 urns.append(urn)
+            if urns:
+                runtime_proof.record(
+                    "datahub", "LIVE",
+                    f"{len(urns)} finding(s) promoted with query lineage to "
+                    f"{self.settings.datahub_gms_url}")
         except Exception as err:  # outage must not fail the investigation
             print(f"[knowledge] DataHub promotion failed: {err}")
+            runtime_proof.record("datahub", "DEGRADED", f"promotion failed ({err})")
         return urns

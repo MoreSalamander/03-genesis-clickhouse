@@ -17,9 +17,13 @@ import { Findings } from "@/components/Findings";
 import { Interpretations } from "@/components/Interpretations";
 import { SimulationPanel } from "@/components/SimulationPanel";
 import { RecommendationCard } from "@/components/RecommendationCard";
+import { Elapsed, EmptyState, Note, Pulse, RuntimeBar, cascade, proofItems } from "@/lib/alive";
 
 const STAGES = ["PLANNING", "ANALYZING", "VERIFYING", "SIMULATING", "RECOMMENDED", "DECIDED"];
 const TERMINAL = new Set(["PROMOTED", "REJECTED", "INCOMPLETE"]);
+// Stages where the analyst is actually working. RECOMMENDED waits on the
+// Studio Head, so it carries no clock and no shimmer.
+const WORKING = new Set(["PLANNING", "ANALYZING", "VERIFYING", "SIMULATING"]);
 const DEFAULT_QUESTION = "Should we greenlight 'Nebula Frontier 2' at $45M for a Q2 release?";
 
 export default function Workbench() {
@@ -94,6 +98,9 @@ export default function Workbench() {
   const stageIndex = active
     ? TERMINAL.has(active.status) ? STAGES.length - 1 : STAGES.indexOf(active.status)
     : -1;
+  const tables = corpus.filter((row) => row.t && Number.isFinite(Number(row.n)));
+  const working = !!active && WORKING.has(active.status);
+  const heartbeat = `${history.length}|${active?.status ?? ""}|${active?.queries.length ?? 0}|${events.length}`;
 
   return (
     <div className="frame">
@@ -105,7 +112,7 @@ export default function Workbench() {
         <div className="mode">
           {status ? (
             <>
-              <div>ClickHouse MCP {status.clickhouse_live ? <span className="live">LIVE</span> : "MOCK"}</div>
+              <div><Pulse signal={heartbeat} /> ClickHouse MCP {status.clickhouse_live ? <span className="live">LIVE</span> : "MOCK"}</div>
               <div>Gemini {status.gemini_live ? <span className="live">LIVE</span> : "MOCK"}</div>
             </>
           ) : (
@@ -116,8 +123,10 @@ export default function Workbench() {
 
       <div className="corpus-strip">
         <span>CORPUS</span>
-        {corpus.length === 0 && <span>— (mock fixtures)</span>}
-        {corpus.map((row) => (
+        {/* In mock mode /corpus answers with a placeholder row carrying neither a
+            table name nor a count — render counts only, never a bare NaN. */}
+        {tables.length === 0 && <span>— (mock fixtures)</span>}
+        {tables.map((row) => (
           <span key={row.t}><b>{Number(row.n).toLocaleString()}</b> {row.t}</span>
         ))}
       </div>
@@ -133,24 +142,48 @@ export default function Workbench() {
           />
           <button onClick={launch} disabled={busy}>OPEN INVESTIGATION</button>
         </div>
-        {error && <div className="error-note">{error}</div>}
+        {error && <Note tone="bad">{error}</Note>}
       </div>
+
+      {!active && history.length === 0 && (
+        <div style={{ margin: "26px 0" }}>
+          <EmptyState
+            eyebrow="Institutional Intelligence · ClickHouse track"
+            title="Ten years of studio history, and every number auditable."
+            lead="The analyst plans hypotheses, writes the SQL itself, runs it against the corpus
+                  through the ClickHouse MCP server, and verifies each finding by rule rather than by
+                  narration. Readings that disagree are kept side by side as CONTESTED — the ledger
+                  preserves the argument instead of averaging it away. The question above is loaded
+                  and ready."
+            action={
+              <button className="btn approve" onClick={launch} disabled={busy}>
+                {busy ? "OPENING…" : "START HERE — OPEN THE INVESTIGATION"}
+              </button>
+            }
+          />
+        </div>
+      )}
 
       {active && (
         <>
           <div className="stage-rail">
-            {STAGES.map((stage, i) => (
-              <div
-                key={stage}
-                className={
-                  "stage" +
-                  (i < stageIndex ? " done" : "") +
-                  (i === stageIndex ? " current" : "")
-                }
-              >
-                {stage === "DECIDED" && TERMINAL.has(active.status) ? active.status : stage}
-              </div>
-            ))}
+            {STAGES.map((stage, i) => {
+              const here = i === stageIndex;
+              return (
+                <div
+                  key={stage}
+                  className={
+                    "stage" +
+                    (i < stageIndex ? " done" : "") +
+                    (here ? " current" : "") +
+                    (here && working ? " alive-active" : "")
+                  }
+                >
+                  {stage === "DECIDED" && TERMINAL.has(active.status) ? active.status : stage}
+                  {here && working && <> <Elapsed stage={active.status} running={working} /></>}
+                </div>
+              );
+            })}
           </div>
           {active.round > 1 && (
             <div className="round-flag">
@@ -167,7 +200,8 @@ export default function Workbench() {
 
               <section className="section">
                 <h2>Findings <span className="count">rule-derived verification, computed in code</span></h2>
-                <Findings findings={active.findings} />
+                <Findings findings={active.findings} queries={active.queries}
+                          interpretations={active.interpretations} />
               </section>
 
               {active.interpretations.length > 0 && (
@@ -191,9 +225,9 @@ export default function Workbench() {
                 </section>
               )}
               {active.status === "INCOMPLETE" && (
-                <div className="error-note">
+                <Note tone="bad">
                   INCOMPLETE — {active.incomplete_reason ?? "substrate unavailable"}; numbers are never fabricated.
-                </div>
+                </Note>
               )}
             </div>
 
@@ -214,10 +248,10 @@ export default function Workbench() {
         </>
       )}
 
-      <section className="section">
+      <section className="section alive-cascade">
         <h2>Investigation ledger <span className="count">{history.length} on record</span></h2>
-        {history.map((item) => (
-          <div className="history-item" key={item.id} onClick={() => open(item.id)}>
+        {history.map((item, i) => (
+          <div className="history-item" style={cascade(i)} key={item.id} onClick={() => open(item.id)}>
             <span className="q">{item.question}</span>
             <span className="s">
               {item.status} · r{item.round} · {item.queries} queries
@@ -227,6 +261,13 @@ export default function Workbench() {
         ))}
         {history.length === 0 && <div className="hint">No investigations yet — open one above.</div>}
       </section>
+
+      <RuntimeBar items={proofItems(status?.runtime_proof, [
+        ["gemini", "Gemini"],
+        ["clickhouse", "ClickHouse MCP"],
+        ["temporal", "Temporal"],
+        ["datahub", "DataHub"],
+      ])} />
     </div>
   );
 }

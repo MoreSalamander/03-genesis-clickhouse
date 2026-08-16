@@ -15,6 +15,7 @@ from app.workflows.run_investigation import (
     run_investigation,
 )
 from app.workflows.runtime import get_runtime
+from app import runtime_proof
 
 router = APIRouter(prefix="/api")
 
@@ -56,7 +57,28 @@ def status() -> dict:
         "clickhouse_live": runtime.settings.clickhouse_live,
         "gemini_live": runtime.settings.gemini_live,
         "investigations": len(runtime.working.all()),
+        "runtime_proof": _runtime_proof(runtime.settings),
     }
+
+
+def _runtime_proof(settings) -> dict:
+    """Substrate states for the console's runtime-proof footer.
+
+    These are configuration-derived starting points; app.runtime_proof
+    overrides any of them the moment the substrate is actually exercised, so a
+    chip only reads LIVE on evidence.
+    """
+    return runtime_proof.snapshot({
+        "gemini": (("LIVE", f"credential present — narration via {settings.gemini_model}")
+                   if settings.gemini_live
+                   else ("MOCK", "no GOOGLE_API_KEY — deterministic mock narration")),
+        "clickhouse": (("LIVE", "ClickHouse MCP configured — queries run against the corpus")
+                       if settings.clickhouse_live
+                       else ("MOCK", "no ClickHouse credentials — seeded fixture corpus")),
+        "temporal": ("IDLE", f"configured at {settings.temporal_address} — "
+                             "no workflow dispatched yet this session"),
+        "datahub": ("IDLE", f"configured at {settings.datahub_gms_url} — nothing promoted yet"),
+    })
 
 
 @router.get("/corpus")
