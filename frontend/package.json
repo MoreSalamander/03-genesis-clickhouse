@@ -2,9 +2,10 @@
   "name": "genesis-clickhouse-console",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3020",
+    "dev": "bash ../ops/dev.sh",
     "build": "next build",
-    "start": "next start -p 3020"
+    "start": "next start -p 3020",
+    "dev:web": "next dev -p 3020"
   },
   "dependencies": {
     "next": "^15.3.0",
