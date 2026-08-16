@@ -79,8 +79,12 @@ def _runtime_proof(settings) -> dict:
         "clickhouse": (("IDLE", f"MCP configured at {settings.clickhouse_mcp_url} — no query run yet")
                        if settings.clickhouse_live
                        else ("MOCK", "no ClickHouse MCP URL — seeded fixture corpus")),
-        "temporal": ("IDLE", f"configured at {settings.temporal_address} — "
-                             "no workflow dispatched yet this session"),
+        # An unset address means Temporal is not part of this deployment, not
+        # that it broke — dialling it would report DEGRADED and read as a fault.
+        "temporal": (("IDLE", f"configured at {settings.temporal_address} — "
+                              "no workflow dispatched yet this session")
+                     if settings.temporal_address
+                     else ("MOCK", "no TEMPORAL_ADDRESS — in-process execution for this deployment")),
         "datahub": ("IDLE", f"configured at {settings.datahub_gms_url} — nothing promoted yet"),
     })
 

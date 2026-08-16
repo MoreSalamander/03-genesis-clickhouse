@@ -17,7 +17,7 @@ import { Findings } from "@/components/Findings";
 import { Interpretations } from "@/components/Interpretations";
 import { SimulationPanel } from "@/components/SimulationPanel";
 import { RecommendationCard } from "@/components/RecommendationCard";
-import { Elapsed, EmptyState, Note, Pulse, RuntimeBar, cascade, proofItems } from "@/lib/alive";
+import { Elapsed, EmptyState, Note, Pulse, RuntimeBar, cascade, proofItems, proofState } from "@/lib/alive";
 
 const STAGES = ["PLANNING", "ANALYZING", "VERIFYING", "SIMULATING", "RECOMMENDED", "DECIDED"];
 const TERMINAL = new Set(["PROMOTED", "REJECTED", "INCOMPLETE"]);
@@ -112,7 +112,10 @@ export default function Workbench() {
         <div className="mode">
           {status ? (
             <>
-              <div><Pulse signal={heartbeat} /> ClickHouse MCP {status.clickhouse_live ? <span className="live">LIVE</span> : "MOCK"}</div>
+              <div><Pulse signal={heartbeat} /> ClickHouse MCP {(() => {
+                const s = proofState(status.runtime_proof, "clickhouse", status.clickhouse_live);
+                return s === "LIVE" ? <span className="live">LIVE</span> : s;
+              })()}</div>
               <div>Gemini {status.gemini_live ? <span className="live">LIVE</span> : "MOCK"}</div>
             </>
           ) : (
