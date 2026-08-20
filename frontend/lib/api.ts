@@ -16,8 +16,9 @@ export interface Finding {
   id: string;
   domain: string;
   statement: string;
-  state: "VERIFIED" | "WEAK" | "CONTESTED" | "INSUFFICIENT";
+  state: "VERIFIED" | "REGIME" | "WEAK" | "CONTESTED" | "INSUFFICIENT";
   basis: string;
+  era_range?: string | null;
   stats: Record<string, number>;
   evidence_query_ids: string[];
 }

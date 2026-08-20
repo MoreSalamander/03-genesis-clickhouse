@@ -152,7 +152,7 @@ export default function Workbench() {
         <div style={{ margin: "26px 0" }}>
           <EmptyState
             eyebrow="Institutional Intelligence · ClickHouse track"
-            title="Ten years of studio history, and every number auditable."
+            title="A century of studio history — 1912 to now — and every number auditable."
             lead="The analyst plans hypotheses, writes the SQL itself, runs it against the corpus
                   through the ClickHouse MCP server, and verifies each finding by rule rather than by
                   narration. Readings that disagree are kept side by side as CONTESTED — the ledger

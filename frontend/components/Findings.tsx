@@ -3,6 +3,7 @@ import { cascade } from "@/lib/alive";
 
 const GLYPH: Record<Finding["state"], string> = {
   VERIFIED: "✓ VERIFIED",
+  REGIME: "◐ REGIME",
   WEAK: "~ WEAK",
   CONTESTED: "⚠ CONTESTED",
   INSUFFICIENT: "∅ INSUFFICIENT",
@@ -12,7 +13,10 @@ function statLine(stats: Record<string, number>): string {
   const parts: string[] = [];
   if (stats.effect !== undefined) parts.push(`effect ${stats.effect}`);
   if (stats.effect_over_noise !== undefined) parts.push(`effect/noise ${stats.effect_over_noise}`);
-  if (stats.n_a !== undefined) parts.push(`n ${stats.n_a}/${stats.n_b}`);
+  if (stats.titles_a !== undefined) parts.push(`titles ${stats.titles_a}/${stats.titles_b}`);
+  else if (stats.n_a !== undefined) parts.push(`n ${stats.n_a}/${stats.n_b}`);
+  if (stats.n_eras_data !== undefined)
+    parts.push(`eras ${stats.n_eras_agree ?? 0}/${stats.n_eras_data} agree`);
   if (stats.analyses !== undefined) parts.push(`${stats.analyses} disagreeing analyses`);
   return parts.join(" · ");
 }
@@ -107,23 +111,22 @@ function ContestedFinding({ finding, queries, interpretations }: {
  *  finding can clear this bar comfortably and still be WEAK on cohort size. The
  *  label names the criterion so a passing gauge beside a WEAK chip reads as the
  *  detail it is rather than a contradiction. */
-function EffectGauge({ ratio }: { ratio: number }) {
-  // Ratios here run from under 1 to nearly 30, so a linear dial pegs every
-  // strong finding at full and stops distinguishing anything. Log scaling keeps
-  // the 1.0 threshold at a fixed mark while 3.6×, 11.5× and 27× stay apart.
-  const MAX = 30;
-  const pct = (v: number) =>
-    (Math.log10(Math.min(Math.max(v, 0), MAX) + 1) / Math.log10(MAX + 1)) * 100;
-  const passes = ratio > 1;
+function EffectGauge({ ratio, threshold }: { ratio: number; threshold: number }) {
+  // Effect sizes are Cohen's-d shaped now (scale-free): the dial runs to 3d and
+  // the threshold mark comes from the verifier itself (stats.threshold), so the
+  // console can never drift from the policy that actually judged the finding.
+  const MAX = Math.max(3, threshold * 6);
+  const pct = (v: number) => (Math.min(Math.max(v, 0), MAX) / MAX) * 100;
+  const passes = ratio > threshold;
   return (
     <div className="gauge"
-         title={`effect/noise ${ratio} — the verification threshold is 1.0 (log scale to ${MAX}×)`}>
+         title={`effect size ${ratio} vs dispersion — the verification threshold is ${threshold}`}>
       <span className="gauge-track">
         <span className={`gauge-fill ${passes ? "pass" : "under"}`} style={{ width: `${pct(ratio)}%` }} />
-        <span className="gauge-threshold" style={{ left: `${pct(1)}%` }} />
+        <span className="gauge-threshold" style={{ left: `${pct(threshold)}%` }} />
       </span>
       <span className={`gauge-num ${passes ? "pass" : "under"}`}>
-        {ratio.toFixed(2)}× effect/noise — {passes ? "meets" : "below"} threshold
+        {ratio.toFixed(2)} effect size — {passes ? "meets" : "below"} the {threshold} bar
       </span>
     </div>
   );
@@ -137,11 +140,14 @@ function PlainFinding({ finding }: { finding: Finding }) {
       <div className="body">
         <div className="domain">{finding.domain.replace("_", " ")}</div>
         <div className="statement">{finding.statement}</div>
+        {finding.state === "REGIME" && finding.era_range && (
+          <div className="era-range">true within: {finding.era_range.replaceAll("_", " ")}</div>
+        )}
         <div className="basis">{finding.basis}</div>
         {Object.keys(finding.stats).length > 0 && (
           <div className="stats">{statLine(finding.stats)}</div>
         )}
-        {ratio !== undefined && <EffectGauge ratio={ratio} />}
+        {ratio !== undefined && <EffectGauge ratio={ratio} threshold={finding.stats.threshold ?? 0.1} />}
       </div>
     </div>
   );

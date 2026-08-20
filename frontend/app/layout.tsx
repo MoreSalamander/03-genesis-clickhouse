@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Genesis OS — Institutional Intelligence",
   description:
-    "Analytical workbench over ten years of studio history — ClickHouse track, Convergence Studios",
+    "Analytical workbench over a century of studio history (1912–2026) — ClickHouse track, Convergence Studios",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
