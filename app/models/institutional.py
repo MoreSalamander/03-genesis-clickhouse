@@ -66,6 +66,7 @@ class AnalyticalQuery(BaseModel):
     elapsed_ms: float = 0.0
     repairs: int = 0                                       # bounded SQL-repair attempts used
     error: Optional[str] = None
+    explain: str = ""                    # EXPLAIN indexes=1, attached as evidence
     computed_stats: dict[str, float] = Field(default_factory=dict)
     snapshot_object: Optional[str] = None                  # MinIO object key of the full result
     at: datetime = Field(default_factory=_now)
@@ -81,6 +82,7 @@ class Finding(BaseModel):
     state: VerificationState
     basis: str = ""                                        # how the rules derived the state
     era_range: str | None = None                           # REGIME: the eras it holds in
+    era_agreement: dict[str, int] = Field(default_factory=dict)  # {era: +1 agrees | -1 disagrees}
     stats: dict[str, float] = Field(default_factory=dict)
     evidence_query_ids: list[str] = Field(default_factory=list)
 
@@ -106,6 +108,9 @@ class SimulationResult(BaseModel):
     n_runs: int = 0
     seed: int = 0
     narrative: str = ""
+    # the whole what-if surface: every group's P10/P50/P90, so the console can
+    # flip the alternative without re-running anything
+    surface: dict[str, dict[str, float]] = Field(default_factory=dict)
     evidence_query_ids: list[str] = Field(default_factory=list)
 
 

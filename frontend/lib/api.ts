@@ -19,6 +19,7 @@ export interface Finding {
   state: "VERIFIED" | "REGIME" | "WEAK" | "CONTESTED" | "INSUFFICIENT";
   basis: string;
   era_range?: string | null;
+  era_agreement?: Record<string, number>;
   stats: Record<string, number>;
   evidence_query_ids: string[];
 }
@@ -35,6 +36,7 @@ export interface AnalyticalQuery {
   elapsed_ms: number;
   repairs: number;
   error: string | null;
+  explain?: string;
   computed_stats: Record<string, number>;
 }
 
@@ -55,6 +57,8 @@ export interface Simulation {
   n_runs: number;
   seed: number;
   narrative: string;
+  params?: Record<string, unknown>;
+  surface?: Record<string, { p10?: number; p50?: number; p90?: number; cohort_n?: number }>;
 }
 
 export interface Recommendation {
@@ -135,3 +139,19 @@ export const sendDecision = (id: string, decision: string, note: string) =>
     body: JSON.stringify({ decision, note }),
   });
 export const getEvents = (limit = 60) => req<Record<string, unknown>[]>(`/events?limit=${limit}`);
+
+export interface QueryCost {
+  read_rows: number; read_bytes: number; memory_bytes: number;
+  duration_ms: number; n_columns: number; years_touched: string[];
+}
+export const getInvestigationCosts = (id: string) =>
+  req<Record<string, QueryCost>>(`/investigations/${id}/costs`);
+export const getShowcaseCosts = () => req<Record<string, QueryCost>>("/showcase/costs");
+export interface SufficiencyChannel {
+  channel: string; from_year: number; to_year: number; titles: number; has_completion: number;
+}
+export const getSufficiency = () =>
+  req<{ channels: SufficiencyChannel[]; corpus: { founded?: number; titles?: number }; mode: string }>("/sufficiency");
+export const postRequery = (queryId: string) =>
+  req<{ original_rows: number; fresh_rows: number; reproduced: boolean; elapsed_ms: number }>(
+    `/requery/${queryId}`, { method: "POST" });

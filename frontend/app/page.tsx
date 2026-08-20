@@ -17,6 +17,8 @@ import { Findings } from "@/components/Findings";
 import { Interpretations } from "@/components/Interpretations";
 import { SimulationPanel } from "@/components/SimulationPanel";
 import { RecommendationCard } from "@/components/RecommendationCard";
+import { EngineRoom } from "@/components/EngineRoom";
+import { QueryCost, SufficiencyChannel, getInvestigationCosts, getSufficiency } from "@/lib/api";
 import { Elapsed, EmptyState, Note, Pulse, RuntimeBar, cascade, proofItems, proofState } from "@/lib/alive";
 
 const STAGES = ["PLANNING", "ANALYZING", "VERIFYING", "SIMULATING", "RECOMMENDED", "DECIDED"];
@@ -30,6 +32,8 @@ export default function Workbench() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [corpus, setCorpus] = useState<{ t: string; n: number }[]>([]);
   const [question, setQuestion] = useState(DEFAULT_QUESTION);
+  const [costs, setCosts] = useState<Record<string, QueryCost>>({});
+  const [sufficiency, setSufficiency] = useState<SufficiencyChannel[]>([]);
   const [active, setActive] = useState<Investigation | null>(null);
   const [history, setHistory] = useState<InvestigationSummary[]>([]);
   const [events, setEvents] = useState<Record<string, unknown>[]>([]);
@@ -54,9 +58,19 @@ export default function Workbench() {
   useEffect(() => {
     refresh();
     getCorpus().then((c) => setCorpus(c.tables)).catch(() => setCorpus([]));
+    getSufficiency().then((s) => setSufficiency(s.channels)).catch(() => {});
     const timer = setInterval(refresh, 4000); // live workbench; self-heals when the API returns
     return () => clearInterval(timer);
   }, [refresh]);
+
+  // query costs resolve after the log flushes — refetch while the ledger fills
+  useEffect(() => {
+    if (!active?.id || active.queries.length === 0) return;
+    const fetchCosts = () => getInvestigationCosts(active.id).then(setCosts).catch(() => {});
+    fetchCosts();
+    const t = setInterval(fetchCosts, 10000);
+    return () => clearInterval(t);
+  }, [active?.id, active?.queries.length]);
 
   const launch = async () => {
     setBusy(true);
@@ -146,6 +160,16 @@ export default function Workbench() {
           <button onClick={launch} disabled={busy}>OPEN INVESTIGATION</button>
         </div>
         {error && <Note tone="bad">{error}</Note>}
+        {sufficiency.length > 0 && (
+          <div className="sufficiency" title="what the corpus can answer, before any cognition is spent">
+            {sufficiency.map((c) => (
+              <span key={c.channel} className="suff-chip">
+                {c.channel.replaceAll("_", " ")} {c.from_year}–{c.to_year >= 2026 ? "now" : c.to_year}
+                {c.has_completion ? " · completion" : ""}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {!active && history.length === 0 && (
@@ -198,7 +222,7 @@ export default function Workbench() {
             <div>
               <section className="section">
                 <h2>Query ledger <span className="count">{active.queries.length} executed · every number auditable</span></h2>
-                <QueryLedger queries={active.queries} />
+                <QueryLedger queries={active.queries} costs={costs} />
               </section>
 
               <section className="section">
@@ -250,6 +274,11 @@ export default function Workbench() {
           </div>
         </>
       )}
+
+      <section className="section">
+        <h2>The engine room <span className="count">seven ClickHouse capabilities, run live through the read-only MCP path</span></h2>
+        <EngineRoom />
+      </section>
 
       <section className="section alive-cascade">
         <h2>Investigation ledger <span className="count">{history.length} on record</span></h2>

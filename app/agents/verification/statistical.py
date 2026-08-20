@@ -100,6 +100,7 @@ class EraAgreement(NamedTuple):
     n_agree: int         # of those, eras whose effect sign matches the overall sign
     disagree: bool       # at least one era's sign opposes the overall sign
     span: str            # human-readable range of agreeing eras, result order
+    per_era: dict        # {era: +1 agree | -1 disagree} in result order
 
 
 def _era_agreement(metric: list[float | None], groups: list[Any], counts: list[float],
@@ -119,6 +120,7 @@ def _era_agreement(metric: list[float | None], groups: list[Any], counts: list[f
     n_data = n_agree = 0
     disagree = False
     agreeing: list[str] = []
+    per_era: dict = {}
     for era in order:
         era_groups = eras[era]
         if g_a not in era_groups or g_b not in era_groups:
@@ -136,8 +138,10 @@ def _era_agreement(metric: list[float | None], groups: list[Any], counts: list[f
         if overall_sign and sign == overall_sign:
             n_agree += 1
             agreeing.append(era)
+            per_era[era] = 1
         elif overall_sign:
             disagree = True
+            per_era[era] = -1
     # numeric split values (a model splitting on era_id) still read as eras:
     # sort them and say "era" — names pass through in result order
     if agreeing and all(a.replace(".", "", 1).isdigit() for a in agreeing):
@@ -145,18 +149,18 @@ def _era_agreement(metric: list[float | None], groups: list[Any], counts: list[f
                     sorted(agreeing, key=lambda a: float(a))]
     span = (agreeing[0] if len(agreeing) == 1
             else f"{agreeing[0]} → {agreeing[-1]}" if agreeing else "")
-    return EraAgreement(n_data, n_agree, disagree, span)
+    return EraAgreement(n_data, n_agree, disagree, span, per_era)
 
 
-def era_span(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> str:
-    """The agreeing-era range for a query's primary two-group effect (for REGIME)."""
+def era_detail(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> EraAgreement:
+    """The full era-agreement picture for a query's primary two-group effect."""
     spec = _infer_spec(query, rows, spec)
     metric = [_to_float(v) for v in _column(query, rows, spec.get("metric_col"))]
     groups = _column(query, rows, spec.get("group_col"))
     counts = [_to_float(v) or 0 for v in _column(query, rows, spec.get("n_col"))]
     split = _column(query, rows, spec.get("split_col"))
     if not metric or not split:
-        return ""
+        return EraAgreement(0, 0, False, "", {})
     per_group: dict[str, float] = {}
     weights: dict[str, float] = {}
     for i, group in enumerate(groups if groups else ["all"] * len(metric)):
@@ -167,12 +171,12 @@ def era_span(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> str:
         per_group[g] = per_group.get(g, 0.0) + metric[i] * w
         weights[g] = weights.get(g, 0.0) + w
     if len(per_group) < 2:
-        return ""
+        return EraAgreement(0, 0, False, "", {})
     ranked = sorted(weights.items(), key=lambda kv: -kv[1])[:2]
     g_a, g_b = ranked[0][0], ranked[1][0]
     effect = per_group[g_a] / weights[g_a] - per_group[g_b] / weights[g_b]
     sign = 1.0 if effect > 0 else (-1.0 if effect < 0 else 0.0)
-    return _era_agreement(metric, groups, counts, split, g_a, g_b, sign).span
+    return _era_agreement(metric, groups, counts, split, g_a, g_b, sign)
 
 
 def analyze_query(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> dict[str, float]:
@@ -322,6 +326,9 @@ class StatisticalVerifier:
         n_agree = int(stats.get("n_eras_agree", 0.0))
         disagree = stats.get("stable_across_splits", 1.0) < 1.0
         era_range: str | None = None
+        detail = (era_detail(primary, rows_of.get(primary.id, primary.rows),
+                             specs.get(primary.id, {}))
+                  if split_present else EraAgreement(0, 0, False, "", {}))
 
         if powered and signal and split_present:
             if not disagree and n_agree >= self.policy.min_stable_eras:
@@ -331,8 +338,7 @@ class StatisticalVerifier:
                          f"direction holds in all {n_agree} eras with data — institutional truth")
             elif n_agree >= 1:
                 state = VerificationState.REGIME
-                era_range = era_span(primary, rows_of.get(primary.id, primary.rows),
-                                     specs.get(primary.id, {}))
+                era_range = detail.span
                 bound = ("an era disagrees" if disagree
                          else f"the data spans only {int(stats.get('n_eras_data', 0))} era(s)")
                 basis = (f"{unit_note} >= {self.policy.min_cohort_n}, "
@@ -363,6 +369,7 @@ class StatisticalVerifier:
             hypothesis_id=hypothesis.id, domain=hypothesis.domain,
             statement=hypothesis.statement, state=state, basis=basis,
             era_range=era_range,
+            era_agreement={str(k): int(v) for k, v in detail.per_era.items()},
             stats={k: v for k, v in stats.items() if isinstance(v, (int, float))},
             evidence_query_ids=[q.id for q in analyzed],
         )

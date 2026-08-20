@@ -61,7 +61,7 @@ class QueryEngineer:
         while True:
             try:
                 cleaned = ensure_select_only(sql)
-                result: QueryResult = self._clickhouse.run_query(cleaned)
+                result: QueryResult = self._clickhouse.run_query(cleaned, tag=record.id)
                 record.sql = cleaned
                 record.columns = result.columns
                 record.rows = result.rows[:200]                # doc-store sample; full → MinIO
@@ -70,6 +70,12 @@ class QueryEngineer:
                 record.repairs = repairs
                 record.error = None
                 record._full_rows = result.rows  # type: ignore[attr-defined]  # transient, for stats/snapshots
+                try:
+                    # partition pruning, on the record — one line of proof per query
+                    plan = self._clickhouse.run_query(f"EXPLAIN indexes = 1 {cleaned}")
+                    record.explain = "\n".join(str(r[0]) for r in plan.rows)[:4000]
+                except Exception:
+                    record.explain = ""
                 return record
             except (QuerySemanticError, SQLRejected) as err:
                 if repairs >= MAX_REPAIRS:

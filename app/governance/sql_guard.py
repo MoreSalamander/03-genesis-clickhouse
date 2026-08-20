@@ -15,9 +15,17 @@ class SQLRejected(ValueError):
 
 _FORBIDDEN = re.compile(
     r"\b(insert|alter|drop|create|truncate|rename|attach|detach|optimize|grant|revoke|"
-    r"set\s+role|kill|system|update|delete|exchange|move|undrop)\b",
+    r"set\s+role|kill|update|delete|exchange|move|undrop)\b",
     re.IGNORECASE,
 )
+
+# SYSTEM is only dangerous as a COMMAND (SYSTEM FLUSH LOGS, SYSTEM RELOAD …).
+# Reading system.query_log / system.parts is how the console proves what a
+# query cost — the introspection tables are part of the showcase, not a risk.
+_SYSTEM_COMMAND = re.compile(r"\bsystem\s+(?!\.)[a-z]", re.IGNORECASE)
+_SYSTEM_TABLES_ALLOWED = ("system.query_log", "system.parts", "system.columns",
+                          "system.tables")
+_SYSTEM_TABLE = re.compile(r"\bsystem\s*\.\s*([a-z_]+)", re.IGNORECASE)
 
 _COMMENT = re.compile(r"(--[^\n]*|/\*.*?\*/)", re.DOTALL)
 
@@ -35,4 +43,9 @@ def ensure_select_only(sql: str) -> str:
     match = _FORBIDDEN.search(cleaned)
     if match:
         raise SQLRejected(f"forbidden keyword '{match.group(0)}' in generated SQL")
+    if _SYSTEM_COMMAND.search(cleaned):
+        raise SQLRejected("SYSTEM commands are not allowed")
+    for table in _SYSTEM_TABLE.findall(cleaned):
+        if f"system.{table.lower()}" not in _SYSTEM_TABLES_ALLOWED:
+            raise SQLRejected(f"system.{table} is not a readable introspection table here")
     return cleaned

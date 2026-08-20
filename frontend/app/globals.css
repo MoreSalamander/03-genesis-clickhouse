@@ -348,3 +348,85 @@ body {
   font: 600 11px var(--mono); letter-spacing: 0.06em; color: var(--regime);
   margin: 2px 0 2px;
 }
+
+/* --- the engine room (components/EngineRoom.tsx) ----------------------------
+   Seven exhibits, one per deep-dive capability. Rules, not cards. */
+.engine-room .exhibit { border-top: 1px solid var(--line); }
+.engine-room .exhibit:first-child { border-top: 0; }
+.exhibit-head {
+  width: 100%; display: grid; grid-template-columns: 190px 1fr auto;
+  align-items: baseline; gap: 12px; padding: 9px 2px;
+  background: none; border: 0; text-align: left; cursor: pointer; color: inherit;
+}
+.exhibit-head:hover { background: var(--paper-inset); }
+.exhibit-head .feature {
+  font: 700 10.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent);
+}
+.exhibit-head .story { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.exhibit-head .cost { font: 10.5px var(--mono); color: var(--muted); white-space: nowrap; }
+.exhibit.open { background: var(--paper-inset); }
+.exhibit-body { padding: 4px 8px 14px 204px; }
+@media (max-width: 760px) { .exhibit-body { padding-left: 12px; } }
+.exhibit-result { overflow-x: auto; margin-bottom: 10px; }
+.exhibit-result table { border-collapse: collapse; font: 11.5px var(--mono); }
+.exhibit-result th, .exhibit-result td {
+  border: 1px solid var(--line); padding: 4px 8px; text-align: left; white-space: nowrap;
+}
+.exhibit-result th { background: var(--paper); color: var(--muted); font-weight: 600; }
+.exhibit-sql {
+  margin: 0; max-height: 260px; overflow: auto; background: var(--paper);
+  border: 1px solid var(--line); padding: 10px 12px;
+  font: 11px/1.55 var(--mono); color: var(--ink-2); white-space: pre-wrap;
+}
+.exhibit-body .err { color: var(--contested); font: 12px var(--mono); margin-bottom: 8px; }
+
+/* --- tier 2/3: the physics, visible ---------------------------------------- */
+.qcost {
+  font: 10.5px var(--mono); color: var(--muted); margin: 6px 0 2px;
+  letter-spacing: 0.03em;
+}
+.pstrip { display: flex; align-items: center; gap: 1px; margin: 4px 0 8px; flex-wrap: wrap; }
+.pcell { width: 4px; height: 10px; background: var(--paper-inset); border-radius: 1px; }
+.pcell.hit { background: var(--accent); }
+.pstrip-label { font: 10px var(--mono); color: var(--muted); margin-left: 8px; }
+.requery { display: inline-flex; align-items: baseline; gap: 10px; margin: 6px 0; }
+.requery button {
+  font: 600 10.5px var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  background: none; border: 1px solid var(--line); border-radius: 3px;
+  padding: 3px 9px; cursor: pointer; color: var(--ink-2);
+}
+.requery button:hover { border-color: var(--accent); color: var(--accent); }
+.requery em { font: 11px var(--mono); color: var(--muted); font-style: normal; }
+.requery em.ok { color: var(--verified); }
+details.explain { margin: 6px 0; }
+details.explain summary {
+  font: 600 10.5px var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); cursor: pointer;
+}
+details.explain pre {
+  font: 10.5px/1.5 var(--mono); color: var(--ink-2); background: var(--paper);
+  border: 1px solid var(--line); padding: 8px 10px; overflow-x: auto; margin: 6px 0 0;
+}
+.era-strip { display: flex; gap: 3px; margin: 5px 0 2px; flex-wrap: wrap; }
+.era-cell {
+  font: 600 9px var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 2px; border: 1px solid;
+}
+.era-cell.agree { color: var(--verified); border-color: var(--verified); background: var(--accent-soft); }
+.era-cell.disagree { color: var(--contested); border-color: var(--contested); background: var(--contested-soft); }
+.sim-dial { display: flex; align-items: baseline; gap: 7px; margin: 8px 0 4px; flex-wrap: wrap; }
+.sim-dial .dial-label { font: 600 10.5px var(--mono); text-transform: uppercase; color: var(--muted); }
+.dial-btn {
+  font: 600 11px var(--mono); background: none; border: 1px solid var(--line);
+  border-radius: 3px; padding: 3px 10px; cursor: pointer; color: var(--ink-2);
+}
+.dial-btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.dial-btn:disabled { opacity: 0.45; cursor: default; }
+.sim-dial .dial-note { font: 10px var(--mono); color: var(--muted); }
+.sufficiency { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.suff-chip {
+  font: 10px var(--mono); letter-spacing: 0.03em; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
+}
+.exhibit-head .cost em { font-style: normal; color: var(--accent); }

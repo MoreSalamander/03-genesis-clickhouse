@@ -124,8 +124,12 @@ class LiveClickHouseMCP:
         raise ClickHouseUnavailable(f"ClickHouse MCP call '{tool}' failed: {last_err}")
 
     # -- verified tool surface ---------------------------------------------
-    def run_query(self, sql: str) -> QueryResult:
+    def run_query(self, sql: str, tag: str | None = None) -> QueryResult:
         cleaned = ensure_select_only(sql)
+        if tag:
+            # the tag rides into system.query_log, where costs_for() finds it —
+            # added AFTER the guard so the guard never sees injected text
+            cleaned = f"/* qtag:{tag} */ {cleaned}"
         t0 = time.time()
         text = self._call("run_query", {"query": cleaned})
         elapsed = (time.time() - t0) * 1000
@@ -161,6 +165,43 @@ class LiveClickHouseMCP:
                 tables.extend(payload)
                 break
         return tables
+
+    def costs_for(self, tags: list[str]) -> dict[str, dict]:
+        """What each tagged query actually cost, from system.query_log.
+
+        Batched into one lookup; the log flushes every ~7.5s, so costs resolve
+        lazily — a missing tag means "not flushed yet", never an error.
+        """
+        if not tags:
+            return {}
+        needles = ", ".join(f"'qtag:{t}'" for t in tags)
+        sql = (
+            "SELECT extract(query, 'qtag:([a-zA-Z0-9_-]+)') AS tag, "
+            "any(read_rows) AS read_rows, any(read_bytes) AS read_bytes, "
+            "any(memory_usage) AS memory_bytes, any(query_duration_ms) AS duration_ms, "
+            "any(length(columns)) AS n_columns, any(partitions) AS partitions "
+            "FROM system.query_log "
+            f"WHERE type = 'QueryFinish' AND event_date >= yesterday() "
+            f"AND multiSearchAny(query, [{needles}]) "
+            "GROUP BY tag"
+        )
+        try:
+            result = self.run_query(sql)
+        except Exception:
+            return {}
+        out: dict[str, dict] = {}
+        for row in result.as_dicts():
+            years = sorted({p.rsplit(".", 1)[-1] for p in (row.get("partitions") or [])
+                            if str(p.rsplit(".", 1)[-1]).isdigit()})
+            out[str(row["tag"])] = {
+                "read_rows": row.get("read_rows", 0),
+                "read_bytes": row.get("read_bytes", 0),
+                "memory_bytes": row.get("memory_bytes", 0),
+                "duration_ms": row.get("duration_ms", 0),
+                "n_columns": row.get("n_columns", 0),
+                "years_touched": years,
+            }
+        return out
 
     def list_databases(self) -> list[str]:
         text = self._call("list_databases", {})
@@ -199,7 +240,7 @@ class MockClickHouseMCP:
         if fixture_path.exists():
             self._fixtures = json.loads(fixture_path.read_text(encoding="utf-8"))
 
-    def run_query(self, sql: str) -> QueryResult:
+    def run_query(self, sql: str, tag: str | None = None) -> QueryResult:
         cleaned = ensure_select_only(sql)
         for fixture in self._fixtures.get("queries", []):
             if fixture.get("match") and fixture["match"] in cleaned:
@@ -209,6 +250,46 @@ class MockClickHouseMCP:
 
     def list_tables(self) -> list[dict]:
         return self._fixtures.get("tables", [])
+
+    def costs_for(self, tags: list[str]) -> dict[str, dict]:
+        return {}                      # no query_log offline — costs are a live-only proof
+
+    def costs_for(self, tags: list[str]) -> dict[str, dict]:
+        """What each tagged query actually cost, from system.query_log.
+
+        Batched into one lookup; the log flushes every ~7.5s, so costs resolve
+        lazily — a missing tag means "not flushed yet", never an error.
+        """
+        if not tags:
+            return {}
+        needles = ", ".join(f"'qtag:{t}'" for t in tags)
+        sql = (
+            "SELECT extract(query, 'qtag:([a-zA-Z0-9_-]+)') AS tag, "
+            "any(read_rows) AS read_rows, any(read_bytes) AS read_bytes, "
+            "any(memory_usage) AS memory_bytes, any(query_duration_ms) AS duration_ms, "
+            "any(length(columns)) AS n_columns, any(partitions) AS partitions "
+            "FROM system.query_log "
+            f"WHERE type = 'QueryFinish' AND event_date >= yesterday() "
+            f"AND multiSearchAny(query, [{needles}]) "
+            "GROUP BY tag"
+        )
+        try:
+            result = self.run_query(sql)
+        except Exception:
+            return {}
+        out: dict[str, dict] = {}
+        for row in result.as_dicts():
+            years = sorted({p.rsplit(".", 1)[-1] for p in (row.get("partitions") or [])
+                            if str(p.rsplit(".", 1)[-1]).isdigit()})
+            out[str(row["tag"])] = {
+                "read_rows": row.get("read_rows", 0),
+                "read_bytes": row.get("read_bytes", 0),
+                "memory_bytes": row.get("memory_bytes", 0),
+                "duration_ms": row.get("duration_ms", 0),
+                "n_columns": row.get("n_columns", 0),
+                "years_touched": years,
+            }
+        return out
 
     def list_databases(self) -> list[str]:
         return [self.database]

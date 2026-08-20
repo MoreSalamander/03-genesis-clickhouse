@@ -139,6 +139,12 @@ class ScenarioAgent:
 
         baseline = bootstrap(base)
         projected = bootstrap(alt)
+        # the rest of the surface, one seeded bootstrap per remaining group —
+        # this is what lets the Studio Head twist the dial without a re-run
+        surface = {baseline_group: baseline, alternative_group: projected}
+        for label, sample in sorted(cohorts.items()):
+            if label not in surface and len(sample) >= 3:
+                surface[label] = bootstrap(sample)
         delta = {k: round(projected[k] - baseline[k], 0) for k in ("p10", "p50", "p90")}
         narrative = (
             f"Seeded bootstrap ({N_RUNS} runs) over the comparable cohort: median projected outcome "
@@ -151,6 +157,6 @@ class ScenarioAgent:
             params={"baseline_group": baseline_group, "alternative_group": alternative_group,
                     "outcome_col": outcome_col, "scale_value": scale},
             baseline=baseline, projected=projected, delta=delta,
-            n_runs=N_RUNS, seed=SIM_SEED, narrative=narrative,
+            n_runs=N_RUNS, seed=SIM_SEED, narrative=narrative, surface=surface,
             evidence_query_ids=[query.id],
         )

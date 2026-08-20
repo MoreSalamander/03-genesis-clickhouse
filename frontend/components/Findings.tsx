@@ -132,6 +132,23 @@ function EffectGauge({ ratio, threshold }: { ratio: number; threshold: number })
   );
 }
 
+/** Which eras agree with the overall effect (filled), which disagree (warned),
+ *  which had no data (empty) — the era lens's atom, one cell per era with data. */
+function EraStrip({ agreement }: { agreement: Record<string, number> }) {
+  const entries = Object.entries(agreement);
+  if (entries.length === 0) return null;
+  return (
+    <div className="era-strip" title="era-by-era direction of the primary effect">
+      {entries.map(([era, sign]) => (
+        <span key={era} className={`era-cell ${sign > 0 ? "agree" : "disagree"}`}
+              title={`${era.replaceAll("_", " ")}: ${sign > 0 ? "agrees" : "disagrees"}`}>
+          {era.replaceAll("_", " ")}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function PlainFinding({ finding }: { finding: Finding }) {
   const ratio = finding.stats.effect_over_noise;
   return (
@@ -147,6 +164,7 @@ function PlainFinding({ finding }: { finding: Finding }) {
         {Object.keys(finding.stats).length > 0 && (
           <div className="stats">{statLine(finding.stats)}</div>
         )}
+        {finding.era_agreement && <EraStrip agreement={finding.era_agreement} />}
         {ratio !== undefined && <EffectGauge ratio={ratio} threshold={finding.stats.threshold ?? 0.1} />}
       </div>
     </div>

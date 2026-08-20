@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Simulation } from "@/lib/api";
 
 // dollar projections when the scenario scaled to a budget; ×multiples otherwise
@@ -46,12 +47,32 @@ function DistributionStrip({ sim }: { sim: Simulation }) {
 }
 
 export function SimulationPanel({ sim }: { sim: Simulation }) {
+  const surface = sim.surface ?? {};
+  const dialable = Object.keys(surface).length > 2;
+  const [altKey, setAltKey] = useState<string>(String(sim.params?.alternative_group ?? ""));
   const base = sim.baseline;
-  const proj = sim.projected;
+  const proj = (dialable && surface[altKey]) || sim.projected;
+  const shown: Simulation = dialable && surface[altKey]
+    ? { ...sim, projected: surface[altKey] as Simulation["projected"],
+        delta: { ...sim.delta, p50: (surface[altKey].p50 ?? 0) - (base.p50 ?? 0) } }
+    : sim;
   return (
     <div className="sim-panel">
       <div className="scenario">“{sim.scenario}”</div>
-      <DistributionStrip sim={sim} />
+      {dialable && (
+        <div className="sim-dial">
+          <span className="dial-label">alternative:</span>
+          {Object.keys(surface).sort().map((k) => (
+            <button key={k} className={`dial-btn${k === altKey ? " on" : ""}`}
+                    onClick={() => setAltKey(k)}
+                    disabled={k === String(sim.params?.baseline_group ?? "")}>
+              {k}
+            </button>
+          ))}
+          <span className="dial-note">the whole surface was computed once — flipping is free</span>
+        </div>
+      )}
+      <DistributionStrip sim={shown} />
       <div className="sim-cols">
         <div className="sim-col">
           <h4>Baseline</h4>
@@ -65,7 +86,7 @@ export function SimulationPanel({ sim }: { sim: Simulation }) {
         </div>
         <div className="sim-col delta">
           <h4>Δ median</h4>
-          <div className="p50">{sim.delta.p50 >= 0 ? "+" : ""}{money(sim.delta.p50)}</div>
+          <div className="p50">{shown.delta.p50 >= 0 ? "+" : ""}{money(shown.delta.p50)}</div>
           <div className="band">seeded · reproducible (seed {sim.seed})</div>
         </div>
       </div>

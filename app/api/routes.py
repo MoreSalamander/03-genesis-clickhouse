@@ -171,7 +171,7 @@ def showcase() -> list[dict]:
     out = []
     for key, item in SHOWCASE.items():
         try:
-            result = runtime.clickhouse.run_query(item["sql"])
+            result = runtime.clickhouse.run_query(item["sql"], tag=f"sc-{key}")
             out.append({"key": key, "feature": item["feature"], "story": item["story"],
                         "sql": item["sql"].strip(), "columns": result.columns,
                         "rows": result.rows[:20], "row_count": result.row_count,
@@ -181,6 +181,61 @@ def showcase() -> list[dict]:
                         "sql": item["sql"].strip(), "columns": [], "rows": [],
                         "row_count": 0, "elapsed_ms": 0.0, "error": str(err)[:300]})
     return out
+
+
+@router.get("/investigations/{inv_id}/costs")
+def investigation_costs(inv_id: str) -> dict:
+    """What each of this investigation's queries actually cost ClickHouse —
+    read from system.query_log by tag. Empty until the log flushes (~8s) or in
+    mock mode: costs are a live-only proof, never fabricated."""
+    runtime = get_runtime()
+    inv = runtime.working.get(inv_id)
+    if inv is None:
+        raise HTTPException(404, "investigation not found")
+    return runtime.clickhouse.costs_for([q.id for q in inv.queries])
+
+
+@router.get("/showcase/costs")
+def showcase_costs() -> dict:
+    from app.showcase import SHOWCASE
+
+    return get_runtime().clickhouse.costs_for([f"sc-{k}" for k in SHOWCASE])
+
+
+@router.get("/sufficiency")
+def sufficiency() -> dict:
+    """What the corpus can answer, before any cognition is spent: per-channel
+    coverage spans and title counts. INSUFFICIENT should be knowable for free."""
+    runtime = get_runtime()
+    try:
+        spans = runtime.clickhouse.run_query(
+            "SELECT channel, toYear(min(at)) AS from_year, toYear(max(at)) AS to_year, "
+            "uniqExact(project_id) AS titles, countIf(isNotNull(completion)) > 0 AS has_completion "
+            "FROM genesis_institutional.audience_performance "
+            "GROUP BY channel ORDER BY from_year, channel LIMIT 200", tag="sufficiency")
+        corpus = runtime.clickhouse.run_query(
+            "SELECT toYear(min(greenlit_at)) AS founded, toYear(max(greenlit_at)) AS latest, "
+            "uniqExact(project_id) AS titles FROM genesis_institutional.projects")
+        return {"channels": spans.as_dicts(), "corpus": corpus.as_dicts()[0], "mode": "live"}
+    except Exception as err:
+        return {"channels": [], "corpus": {}, "mode": "mock", "note": str(err)[:200]}
+
+
+@router.post("/requery/{query_id}", status_code=200)
+def requery(query_id: str) -> dict:
+    """The reproducibility receipt: re-run a stored query's exact SQL through
+    the same read-only MCP path, right now, and compare the shape."""
+    runtime = get_runtime()
+    for inv in runtime.working.all():
+        for query in inv.queries:
+            if query.id == query_id and query.sql:
+                result = runtime.clickhouse.run_query(query.sql, tag=f"rq-{query_id}")
+                return {"query_id": query_id,
+                        "original_rows": query.row_count, "fresh_rows": result.row_count,
+                        "reproduced": result.row_count == query.row_count,
+                        "elapsed_ms": round(result.elapsed_ms, 1),
+                        "rows": result.rows[:5]}
+    raise HTTPException(404, "query not found")
 
 
 @router.get("/events")
