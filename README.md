@@ -2,23 +2,26 @@
 
 **ClickHouse track · Google Cloud Agentic Cinema Hackathon · Convergence Studios**
 
-A standalone multi-agent analytical-cognition system for a film studio's ten years of
-institutional history. It answers the Studio Head's question:
+A standalone multi-agent analytical-cognition system over a century of institutional
+history: Convergence Studios, founded 1912 — ~4,600 productions, ten industry eras,
+and ~104 million fact rows, seeded deterministically in about two and a half minutes. It answers the Studio Head's question:
 
 > *"What does our accumulated history tell us — and what happens if we change this assumption?"*
 
 Not "chat with your database": investigations are multi-step analytical campaigns —
 baseline → cohort → comparison → trend → simulation — where every number comes from
 ClickHouse through the **official `mcp-clickhouse` MCP server**, every statistic is
-computed in code, and every finding carries a rule-derived verification state
-(`VERIFIED / WEAK / CONTESTED / INSUFFICIENT`). Conflicting analyses are preserved and
+computed in code (effect sizes vs dispersion — scale-free, so 104M rows cannot buy
+significance; VERIFIED additionally requires the effect to hold across ≥3 eras),
+and every finding carries a rule-derived verification state
+(`VERIFIED / REGIME / WEAK / CONTESTED / INSUFFICIENT` — REGIME is a truth with an era boundary: real, bounded, and promoted with its range). Conflicting analyses are preserved and
 presented side-by-side, never silently resolved by the model.
 
 ```
 Studio Head question
   → Analytical Planner (hypotheses per cognitive domain)
   → Query Engineer (Gemini writes SQL, schema-grounded, SELECT-only enforced in code)
-  → official mcp-clickhouse server → ClickHouse (10y corpus, ~5M rows)
+  → official mcp-clickhouse server → ClickHouse (1912–2026 corpus, ~104M rows)
   → Statistical Verification (states computed in Python, never model-asserted)
   → Competing interpretations → Findings → Scenario simulation
   → Recommendation (confidence = verification coverage)
@@ -46,7 +49,7 @@ cd ops && docker compose up -d --build && cd ..
 # 2. Python env
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
-# 3. Seed the deterministic 10-year corpus (~5M rows, engineered correlations)
+# 3. Seed the deterministic 1912–2026 corpus (~104M rows; self-migrates old schemas)
 .venv/bin/python -m seed.generate
 
 # 4. Configure (optional — boots in MOCK mode with no keys)
@@ -73,9 +76,17 @@ sample with deterministic cognition — `GENESIS_MOCK=1`.
   NATS (`genesis.institutional.events`) · Redis (investigation latch) · DataHub
   (table registration + VERIFIED-finding promotion with query lineage) · MinIO
   (full result-set snapshots) · OpenTelemetry → Google Cloud Trace.
-- **Corpus**: deterministic seeded generator — ~60 projects across 10 years with
-  engineered correlations (overrun-by-scale/genre, release-window seasonality,
-  contested sequel economics, platform-mix drift). Reproducible analyses.
+- **Corpus**: a beat-for-beat analogue of the oldest Hollywood majors — ~4,600
+  productions across 114 years and ten eras (`eras` is a queryable table, as are
+  `cpi_annual`, `franchises`, and `shock_calendar`). Money is NOMINAL with a real
+  CPI deflator; channels are era-gated (TV licensing born 1955, home video 1980,
+  Convergence+ launches 2020 with the whole vault); the shock calendar (1918 flu,
+  Depression, strike history, COVID) dents the data exactly where history dented
+  the industry. Engineered, SQL-recoverable truths: the 1975 seasonality regime
+  flip, the overrun U-shape (factory-era minimum), the monster-cycle fatigue
+  curve, video passing theatrical (~1986), the DVD peak (2004), the COVID cliff,
+  and the contested modern sequel pair. `seed/verify_corpus.py` proves all of it
+  plus bit-identical reseeds (per-table fingerprints).
 
 Part of the **Genesis OS** federation (five standalone partner systems + a
 coordination layer that none of them depend on). This system runs entirely alone.

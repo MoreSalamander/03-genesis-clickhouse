@@ -25,7 +25,7 @@ through the durable Temporal workflow signal when available.
 |---|---|
 | `hypotheses[]` | falsifiable claims per cognitive domain (4+1 model) |
 | `queries[]` | executed SQL evidence: `sql`, `columns`, `rows` (sample), `row_count`, `elapsed_ms`, `repairs`, `computed_stats`, `snapshot_object` (MinIO key of the full result) |
-| `findings[]` | rule-derived `state` ∈ VERIFIED/WEAK/CONTESTED/INSUFFICIENT with `basis` (how the rules decided) and `stats` (effect, n, effect/noise) |
+| `findings[]` | rule-derived `state` ∈ VERIFIED/REGIME/WEAK/CONTESTED/INSUFFICIENT with `basis` (how the rules decided) and `stats` (effect, n, effect/noise) |
 | `interpretations[]` | competing readings; CONTESTED findings always carry ≥2 stances |
 | `simulation` | seeded bootstrap projection: `baseline`/`projected`/`delta` at P10/P50/P90, `seed`, `n_runs` |
 | `recommendation` | `action`, `rationale`, `confidence` (computed from verification coverage), `coverage`, `caveats` |

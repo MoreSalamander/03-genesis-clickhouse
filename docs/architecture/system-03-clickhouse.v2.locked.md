@@ -232,3 +232,32 @@ insufficient`, `simulation.completed`, `recommendation.created`, `authorization.
 **APPROVAL:** On the Studio Head's approval, this exact document locks as the canonical System 03
 architecture (renamed `system-03-clickhouse.v2.locked.md`). Requested changes will be applied and
 re-presented before locking.
+
+---
+
+## AMENDMENT — 2026-08-19 (Studio Head: lock lifted, corpus re-anchored to 1912)
+
+The Studio Head lifted this document's lock on 2026-08-19 (engineering feedback loop
+phase; decisions.md entry of the same date). It remains the reference architecture;
+only the official hackathon rules bind System 03 now.
+
+**§2.4 superseded**: the seeded corpus is no longer "~10 years, ~60 projects, ~5–10M
+rows". Convergence Studios is founded **1912** (beat-for-beat analogue of the oldest
+Hollywood majors): **~4,600 productions across ten eras, ~104M fact rows**, generated
+by a hybrid seeder (Python parameter rows + in-ClickHouse INSERT…SELECT expansion,
+cityHash64-deterministic, ~2.5 minutes, bit-identical reseeds). New queryable
+dimensions: `eras`, `cpi_annual` (money is nominal + real deflator), `franchises`
+(cycle economics by era), `shock_calendar` (1918 flu → 2023 double strike, driving
+row-level dents). Facts partition by YEAR; `audience_performance` is channel-aware
+(11 era-gated channels; completion is NULL outside streaming). Era-recoverable
+engineered truths and the determinism proof live in `seed/verify_corpus.py`.
+Verification-policy recalibration for century-scale cohorts is the named next
+increment.
+
+**§2.3 superseded (same amendment)**: verification recalibrated for the century corpus.
+Power is judged on the COMPARED UNIT (titles when the SQL counts them); effect-over-noise
+is an effect size against pooled dispersion (scale-free), threshold 0.10 — the era gate
+carries the rigor; VERIFIED requires direction agreement in ≥3 eras with data and none
+disagreeing; the new **REGIME** state is a truth bounded to an era range (promoted to
+DataHub with its bounds; confidence weight 0.40 vs VERIFIED's 0.60). Studio Head
+decisions of 2026-08-19.
