@@ -63,8 +63,8 @@ def test_confidence_is_computed_from_coverage(runtime):
     inv = _run(runtime)
     cov = inv.recommendation.coverage
     total = sum(cov.values())
-    expected = 0.30 + 0.60 * cov["VERIFIED"] / total + 0.10 * cov["WEAK"] / total \
-        - 0.05 * cov["INSUFFICIENT"] / total
+    expected = 0.30 + 0.60 * cov["VERIFIED"] / total + 0.40 * cov["REGIME"] / total \
+        + 0.10 * cov["WEAK"] / total - 0.05 * cov["INSUFFICIENT"] / total
     assert abs(inv.recommendation.confidence - round(min(0.95, max(0.20, expected)), 2)) < 1e-9
 
 
@@ -106,3 +106,19 @@ def test_latch_released_after_completion(runtime):
     run_decision(inv.id, "rejected", "not now")
     assert runtime.ephemeral.acquire_latch(INVESTIGATION_LATCH, "probe", LATCH_TTL_S) is None
     runtime.ephemeral.release_latch(INVESTIGATION_LATCH)
+
+
+def test_century_state_mix_on_the_canonical_run(runtime):
+    """The recalibrated rules must produce the full vocabulary on the mock
+    investigation: institutional truth (VERIFIED, cross-era), an era-bounded
+    REGIME carrying its range, and the preserved CONTESTED pair."""
+    inv = _run(runtime)
+    states = {f.state for f in inv.findings}
+    assert VerificationState.VERIFIED in states
+    assert VerificationState.REGIME in states
+    assert VerificationState.CONTESTED in states
+    regime = next(f for f in inv.findings if f.state == VerificationState.REGIME)
+    assert regime.era_range, "a REGIME finding must carry its era range"
+    verified = [f for f in inv.findings if f.state == VerificationState.VERIFIED]
+    assert any(f.stats.get("n_eras_agree", 0) >= 3 for f in verified), \
+        "at least one VERIFIED finding must rest on 3+ agreeing eras"

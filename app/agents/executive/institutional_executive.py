@@ -33,6 +33,7 @@ _STATE_EVENT = {
     VerificationState.VERIFIED: "finding.verified",
     VerificationState.WEAK: "finding.weak",
     VerificationState.CONTESTED: "finding.contested",
+    VerificationState.REGIME: "finding.regime",
     VerificationState.INSUFFICIENT: "finding.insufficient",
 }
 
@@ -92,11 +93,16 @@ class InstitutionalExecutive:
 
     def _corpus_summary(self) -> dict:
         try:
+            # 114 years of nominal dollars sum to nonsense — deflate to 2026
             result = self.rt.clickhouse.run_query(
-                "SELECT status, count() AS n, round(sum(budget_usd)/1e6, 1) AS total_budget_m "
-                "FROM genesis_institutional.projects GROUP BY status ORDER BY n DESC"
+                "SELECT status, count() AS n, "
+                "round(sum(p.budget_usd * c.mult_to_2026)/1e9, 2) AS total_budget_2026_b "
+                "FROM genesis_institutional.projects p "
+                "JOIN genesis_institutional.cpi_annual c ON c.year = toYear(p.greenlit_at) "
+                "GROUP BY status ORDER BY n DESC"
             )
-            return {"projects_by_status": result.as_dicts()}
+            return {"projects_by_status": result.as_dicts(),
+                    "corpus": "Convergence Studios, founded 1912 — 114 years, ten eras"}
         except Exception as err:
             return {"projects_by_status": [], "note": f"scope query unavailable: {err}"}
 
@@ -203,10 +209,12 @@ class InstitutionalExecutive:
         total = max(1, len(inv.findings))
         # confidence is a FUNCTION OF VERIFICATION COVERAGE (locked §2.3) — computed
         # here, never asserted by the model: verified findings carry the weight,
+        # era-bounded REGIME truths carry most of it (Studio Head, 2026-08-19),
         # weak ones a fraction, contested ones are preserved tension (no credit,
         # no penalty), insufficient ones subtract.
         confidence = (0.30
                       + 0.60 * coverage["VERIFIED"] / total
+                      + 0.40 * coverage["REGIME"] / total
                       + 0.10 * coverage["WEAK"] / total
                       - 0.05 * coverage["INSUFFICIENT"] / total)
         confidence = round(min(0.95, max(0.20, confidence)), 2)

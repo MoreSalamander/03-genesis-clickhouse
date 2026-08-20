@@ -1,17 +1,31 @@
 """Statistical Verification Agent — verification states computed IN CODE from
-the numbers ClickHouse returned (locked §2.3: rule-derived, never model-asserted).
+the numbers ClickHouse returned (rule-derived, never model-asserted).
 
-Rules (policy in app/config.py, VerificationPolicy):
-  VERIFIED     n >= min_cohort_n, |effect| > effect_over_noise x standard error,
-               and the effect direction holds across the split column when present
-  WEAK         a signal is present but under-powered (small n or effect within noise)
+Recalibrated for the century corpus (2026-08-19). The rules a 62-project corpus
+tolerated broke at 104M rows: an n that counts fact rows clears any bar, and an
+effect divided by the standard error grows with √n — scale masquerading as
+significance. The rules now:
+
+  VERIFIED     powered on the COMPARED UNIT (titles when a titles-grain count is
+               present), effect size exceeds the dispersion threshold (Cohen's-d
+               shaped, scale-free), AND the direction agrees in >= min_stable_eras
+               eras with no era disagreeing — a law of the studio, not of a decade
+  REGIME       powered and clear, but true only within an era range: some era
+               disagrees, or the data itself spans fewer than min_stable_eras eras
+               (a streaming-era question IS era-bounded) — carried with its range
+  WEAK         signal present but under-powered, within noise, or era stability
+               unprovable because the result carries no era split
   CONTESTED    two intents on the same hypothesis disagree in direction — preserved
-  INSUFFICIENT the result cannot support the computation (too few rows / no metric)
+  INSUFFICIENT the result cannot support the computation
+
+The verifier is a pure function over rows already fetched — it can never ask a
+follow-up question, so era stability exists only if the SQL brought an era
+column home (the prompts require exactly that).
 """
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, NamedTuple
 
 from app.config import VerificationPolicy
 from app.models.institutional import AnalyticalQuery, Finding, Hypothesis, VerificationState
@@ -33,6 +47,11 @@ def _column(query: AnalyticalQuery, rows: list[list[Any]], name: str | None) -> 
     return [row[idx] for row in rows]
 
 
+TITLE_GRAIN_NAMES = ("n_titles", "titles", "project_count", "num_projects", "n_projects",
+                     "uniq_titles", "title_count")
+SPLIT_NAMES = ("era", "era_name", "eras", "decade", "regime", "period")
+
+
 def _infer_spec(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> dict:
     """Reconcile the planner's verification spec with the columns the SQL actually
     returned. Cognition drifts; the rules must not — when a named column is
@@ -52,6 +71,9 @@ def _infer_spec(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> di
     def missing(key: str) -> bool:
         return not resolved.get(key) or resolved[key] not in cols
 
+    if missing("titles_col"):
+        resolved["titles_col"] = next(
+            (c for c in numeric_cols if c.lower() in TITLE_GRAIN_NAMES), None)
     if missing("n_col"):
         resolved["n_col"] = next((c for c in numeric_cols
                                   if c.lower() in ("n", "count", "cnt", "samples", "titles",
@@ -59,23 +81,113 @@ def _infer_spec(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> di
                                   or c.lower().startswith(("n_", "count", "num_"))), None)
     if missing("std_col"):
         resolved["std_col"] = next((c for c in numeric_cols if "std" in c.lower()), None)
-    if missing("group_col"):
-        resolved["group_col"] = categorical_cols[0] if categorical_cols else None
-    if missing("metric_col"):
-        reserved = {resolved.get("n_col"), resolved.get("std_col")}
-        resolved["metric_col"] = next((c for c in numeric_cols if c not in reserved), None)
     if missing("split_col"):
-        resolved["split_col"] = None
+        # era stability is only computable when the result carries the split —
+        # recognize the corpus's own era vocabulary even when the planner forgot
+        resolved["split_col"] = next(
+            (c for c in categorical_cols if c.lower() in SPLIT_NAMES), None)
+    if missing("group_col"):
+        candidates = [c for c in categorical_cols if c != resolved.get("split_col")]
+        resolved["group_col"] = candidates[0] if candidates else None
+    if missing("metric_col"):
+        reserved = {resolved.get("n_col"), resolved.get("std_col"), resolved.get("titles_col")}
+        resolved["metric_col"] = next((c for c in numeric_cols if c not in reserved), None)
     return resolved
 
 
+class EraAgreement(NamedTuple):
+    n_data: int          # eras where BOTH compared groups have rows
+    n_agree: int         # of those, eras whose effect sign matches the overall sign
+    disagree: bool       # at least one era's sign opposes the overall sign
+    span: str            # human-readable range of agreeing eras, result order
+
+
+def _era_agreement(metric: list[float | None], groups: list[Any], counts: list[float],
+                   split: list[Any], g_a: str, g_b: str, overall_sign: float) -> EraAgreement:
+    """Per-era agreement of the two-group effect, n-weighted within each era."""
+    eras: dict[str, dict[str, list[tuple[float, float]]]] = {}
+    order: list[str] = []
+    for i, era in enumerate(split):
+        if metric[i] is None:
+            continue
+        e = str(era)
+        if e not in eras:
+            order.append(e)
+        weight = counts[i] if i < len(counts) and counts[i] else 1.0
+        eras.setdefault(e, {}).setdefault(str(groups[i]), []).append((metric[i], weight))
+
+    n_data = n_agree = 0
+    disagree = False
+    agreeing: list[str] = []
+    for era in order:
+        era_groups = eras[era]
+        if g_a not in era_groups or g_b not in era_groups:
+            continue
+        n_data += 1
+
+        def wmean(pairs: list[tuple[float, float]]) -> float:
+            total = sum(w for _, w in pairs) or 1.0
+            return sum(v * w for v, w in pairs) / total
+
+        diff = wmean(era_groups[g_a]) - wmean(era_groups[g_b])
+        if diff == 0:
+            continue
+        sign = 1.0 if diff > 0 else -1.0
+        if overall_sign and sign == overall_sign:
+            n_agree += 1
+            agreeing.append(era)
+        elif overall_sign:
+            disagree = True
+    # numeric split values (a model splitting on era_id) still read as eras:
+    # sort them and say "era" — names pass through in result order
+    if agreeing and all(a.replace(".", "", 1).isdigit() for a in agreeing):
+        agreeing = [f"era {int(float(a))}" for a in
+                    sorted(agreeing, key=lambda a: float(a))]
+    span = (agreeing[0] if len(agreeing) == 1
+            else f"{agreeing[0]} → {agreeing[-1]}" if agreeing else "")
+    return EraAgreement(n_data, n_agree, disagree, span)
+
+
+def era_span(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> str:
+    """The agreeing-era range for a query's primary two-group effect (for REGIME)."""
+    spec = _infer_spec(query, rows, spec)
+    metric = [_to_float(v) for v in _column(query, rows, spec.get("metric_col"))]
+    groups = _column(query, rows, spec.get("group_col"))
+    counts = [_to_float(v) or 0 for v in _column(query, rows, spec.get("n_col"))]
+    split = _column(query, rows, spec.get("split_col"))
+    if not metric or not split:
+        return ""
+    per_group: dict[str, float] = {}
+    weights: dict[str, float] = {}
+    for i, group in enumerate(groups if groups else ["all"] * len(metric)):
+        if metric[i] is None:
+            continue
+        g = str(group)
+        w = counts[i] if i < len(counts) and counts[i] else 1.0
+        per_group[g] = per_group.get(g, 0.0) + metric[i] * w
+        weights[g] = weights.get(g, 0.0) + w
+    if len(per_group) < 2:
+        return ""
+    ranked = sorted(weights.items(), key=lambda kv: -kv[1])[:2]
+    g_a, g_b = ranked[0][0], ranked[1][0]
+    effect = per_group[g_a] / weights[g_a] - per_group[g_b] / weights[g_b]
+    sign = 1.0 if effect > 0 else (-1.0 if effect < 0 else 0.0)
+    return _era_agreement(metric, groups, counts, split, g_a, g_b, sign).span
+
+
 def analyze_query(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> dict[str, float]:
-    """Two-group effect statistics from an aggregate result table."""
+    """Two-group effect statistics from an aggregate result table.
+
+    effect_over_noise is Cohen's-d shaped: |mean_a − mean_b| / pooled dispersion.
+    It is deliberately scale-FREE — 91 million rows cannot buy significance, only
+    a genuinely large and consistent effect can.
+    """
     stats: dict[str, float] = {}
     spec = _infer_spec(query, rows, spec)
     metric = [_to_float(v) for v in _column(query, rows, spec.get("metric_col"))]
     groups = _column(query, rows, spec.get("group_col"))
     counts = [_to_float(v) or 0 for v in _column(query, rows, spec.get("n_col"))]
+    titles = [_to_float(v) or 0 for v in _column(query, rows, spec.get("titles_col"))]
     stds = [_to_float(v) for v in _column(query, rows, spec.get("std_col"))]
     split = _column(query, rows, spec.get("split_col"))
 
@@ -89,11 +201,13 @@ def analyze_query(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> 
         if value is None:
             continue
         g = str(group)
-        acc = per_group.setdefault(g, {"sum": 0.0, "n": 0.0, "wsum": 0.0, "std": 0.0, "k": 0})
+        acc = per_group.setdefault(g, {"sum": 0.0, "n": 0.0, "t": 0.0,
+                                       "wsum": 0.0, "std": 0.0, "k": 0})
         weight = counts[i] if i < len(counts) and counts[i] else 1.0
         acc["sum"] += value * weight
         acc["wsum"] += weight
         acc["n"] += counts[i] if i < len(counts) else 0.0
+        acc["t"] += titles[i] if i < len(titles) else 0.0
         if i < len(stds) and stds[i] is not None:
             acc["std"] += stds[i]
             acc["k"] += 1
@@ -114,33 +228,29 @@ def analyze_query(query: AnalyticalQuery, rows: list[list[Any]], spec: dict) -> 
         std_a = (acc_a["std"] / acc_a["k"]) if acc_a["k"] else abs(mean_a) * 0.5
         std_b = (acc_b["std"] / acc_b["k"]) if acc_b["k"] else abs(mean_b) * 0.5
         effect = mean_a - mean_b
-        se = math.sqrt((std_a ** 2) / n_a + (std_b ** 2) / n_b) or 1e-9
+        # pooled dispersion, never the standard error: dividing by SE let n buy
+        # significance (the old demo's "effect/noise 231" was row count, not truth)
+        pooled = math.sqrt((std_a ** 2 + std_b ** 2) / 2) or 1e-9
         stats.update({
             "mean_a": round(mean_a, 6), "mean_b": round(mean_b, 6),
             "n_a": n_a, "n_b": n_b,
-            "effect": round(effect, 6), "std_error": round(se, 6),
-            "effect_over_noise": round(abs(effect) / se, 3),
+            "effect": round(effect, 6), "dispersion": round(pooled, 6),
+            "effect_over_noise": round(abs(effect) / pooled, 3),
         })
+        if acc_a["t"] or acc_b["t"]:
+            stats["titles_a"] = acc_a["t"]
+            stats["titles_b"] = acc_b["t"]
         # direction across the full ordering (max vs min group) for narrative use
         ordered = sorted(means.items(), key=lambda kv: kv[1])
         stats["spread"] = round(ordered[-1][1] - ordered[0][1], 6)
         stats["direction"] = 1.0 if effect > 0 else (-1.0 if effect < 0 else 0.0)
 
         if split:
-            # stability: does the top-vs-bottom group ordering hold within each split?
-            eras: dict[str, dict[str, list[float]]] = {}
-            for i, era in enumerate(split):
-                if metric[i] is None:
-                    continue
-                eras.setdefault(str(era), {}).setdefault(str(groups[i]), []).append(metric[i])
-            signs = set()
-            for era_groups in eras.values():
-                if g_a in era_groups and g_b in era_groups:
-                    diff = (sum(era_groups[g_a]) / len(era_groups[g_a])
-                            - sum(era_groups[g_b]) / len(era_groups[g_b]))
-                    if diff:
-                        signs.add(1.0 if diff > 0 else -1.0)
-            stats["stable_across_splits"] = 1.0 if len(signs) <= 1 else 0.0
+            era = _era_agreement(metric, groups, counts, split, g_a, g_b,
+                                 stats["direction"])
+            stats["n_eras_data"] = float(era.n_data)
+            stats["n_eras_agree"] = float(era.n_agree)
+            stats["stable_across_splits"] = 0.0 if era.disagree else 1.0
     return stats
 
 
@@ -194,26 +304,57 @@ class StatisticalVerifier:
 
         primary = max(analyzed, key=lambda q: q.computed_stats.get("effect_over_noise", 0.0))
         stats = primary.computed_stats
-        n_min = min(stats.get("n_a", 0.0), stats.get("n_b", 0.0))
-        powered = n_min >= self.policy.min_cohort_n
-        signal = stats.get("effect_over_noise", 0.0) > self.policy.effect_over_noise
-        stable = stats.get("stable_across_splits", 1.0) >= 1.0
+        stats["threshold"] = self.policy.effect_over_noise   # the gauge is self-describing
 
-        if powered and signal and stable:
-            state = VerificationState.VERIFIED
-            basis = (f"n_min={n_min:.0f} >= {self.policy.min_cohort_n}, "
-                     f"effect/noise={stats.get('effect_over_noise')} > {self.policy.effect_over_noise}, "
-                     f"direction stable across splits")
+        # power is judged on the COMPARED UNIT: titles when the SQL counted them,
+        # row-grain n as an annotated fallback (the scale-free effect and the era
+        # gate are what actually close the 91M-row loophole)
+        title_grain = "titles_a" in stats
+        if title_grain:
+            unit_min = min(stats.get("titles_a", 0.0), stats.get("titles_b", 0.0))
+            unit_note = f"titles_min={unit_min:.0f}"
+        else:
+            unit_min = min(stats.get("n_a", 0.0), stats.get("n_b", 0.0))
+            unit_note = f"n_min={unit_min:.0f} (power unit approximate: row-grain n)"
+        powered = unit_min >= self.policy.min_cohort_n
+        signal = stats.get("effect_over_noise", 0.0) > self.policy.effect_over_noise
+        split_present = stats.get("n_eras_data", 0.0) > 0
+        n_agree = int(stats.get("n_eras_agree", 0.0))
+        disagree = stats.get("stable_across_splits", 1.0) < 1.0
+        era_range: str | None = None
+
+        if powered and signal and split_present:
+            if not disagree and n_agree >= self.policy.min_stable_eras:
+                state = VerificationState.VERIFIED
+                basis = (f"{unit_note} >= {self.policy.min_cohort_n}, "
+                         f"effect size {stats.get('effect_over_noise')} > {self.policy.effect_over_noise}, "
+                         f"direction holds in all {n_agree} eras with data — institutional truth")
+            elif n_agree >= 1:
+                state = VerificationState.REGIME
+                era_range = era_span(primary, rows_of.get(primary.id, primary.rows),
+                                     specs.get(primary.id, {}))
+                bound = ("an era disagrees" if disagree
+                         else f"the data spans only {int(stats.get('n_eras_data', 0))} era(s)")
+                basis = (f"{unit_note} >= {self.policy.min_cohort_n}, "
+                         f"effect size {stats.get('effect_over_noise')} > {self.policy.effect_over_noise}, "
+                         f"but {bound} — true within {era_range or 'a bounded range'}, "
+                         f"not across the century")
+            else:
+                state = VerificationState.WEAK
+                basis = "signal present but direction unstable in every era"
+        elif powered and signal and not split_present:
+            state = VerificationState.WEAK
+            basis = ("signal present but era stability unproven — "
+                     "the result carries no era split")
         elif signal or stats.get("effect"):
             state = VerificationState.WEAK
             reasons = []
             if not powered:
-                reasons.append(f"n_min={n_min:.0f} < {self.policy.min_cohort_n}")
+                reasons.append(f"{unit_note} < {self.policy.min_cohort_n}")
             if not signal:
-                reasons.append(f"effect/noise={stats.get('effect_over_noise')} <= {self.policy.effect_over_noise}")
-            if not stable:
-                reasons.append("direction flips across splits")
-            basis = "signal present but under-powered: " + ", ".join(reasons)
+                reasons.append(f"effect size {stats.get('effect_over_noise')} <= {self.policy.effect_over_noise}")
+            basis = "signal present but under-powered: " + ", ".join(reasons) if reasons \
+                else "signal within noise"
         else:
             state = VerificationState.INSUFFICIENT
             basis = "no measurable effect in the result"
@@ -221,6 +362,7 @@ class StatisticalVerifier:
         return Finding(
             hypothesis_id=hypothesis.id, domain=hypothesis.domain,
             statement=hypothesis.statement, state=state, basis=basis,
+            era_range=era_range,
             stats={k: v for k, v in stats.items() if isinstance(v, (int, float))},
             evidence_query_ids=[q.id for q in analyzed],
         )

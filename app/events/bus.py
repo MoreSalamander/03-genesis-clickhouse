@@ -13,7 +13,7 @@ EVENT_NAMES = {
     "analysis.executed",
     "finding.verified",
     "finding.weak",          # §2.3 defines WEAK; §2.12's event list omitted it — completed here
-    "finding.contested",
+    "finding.contested", "finding.regime",
     "finding.insufficient",
     "simulation.completed",
     "recommendation.created",

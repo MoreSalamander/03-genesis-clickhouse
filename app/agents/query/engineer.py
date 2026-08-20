@@ -29,11 +29,14 @@ class QueryEngineer:
         tables = []
         for table in self._clickhouse.list_tables():
             name = str(table.get("name", ""))
-            if name.startswith(".inner"):
-                continue
+            if name.startswith(".inner") or name.endswith("_mv"):
+                continue                      # MV wrappers duplicate their target tables
             columns = table.get("columns") or []
             col_desc = [
-                {"name": c.get("name"), "type": c.get("column_type") or c.get("type")}
+                # column COMMENTs carry the corpus semantics (nominal money, era
+                # gates, NULL-outside-streaming) straight into the SQL prompts
+                {"name": c.get("name"), "type": c.get("column_type") or c.get("type"),
+                 **({"comment": c["comment"]} if c.get("comment") else {})}
                 for c in columns
             ] if isinstance(columns, list) else []
             tables.append({
@@ -61,7 +64,7 @@ class QueryEngineer:
                 result: QueryResult = self._clickhouse.run_query(cleaned)
                 record.sql = cleaned
                 record.columns = result.columns
-                record.rows = result.rows[:50]                # doc-store sample; full → MinIO
+                record.rows = result.rows[:200]                # doc-store sample; full → MinIO
                 record.row_count = result.row_count
                 record.elapsed_ms = round(result.elapsed_ms, 1)
                 record.repairs = repairs

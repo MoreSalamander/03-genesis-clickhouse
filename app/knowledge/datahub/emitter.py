@@ -18,7 +18,8 @@ from app import runtime_proof
 from app.models.institutional import Investigation, VerificationState
 
 TABLES = ["projects", "production_events", "financial_ledger",
-          "audience_performance", "distribution_events", "ops_events"]
+          "audience_performance", "distribution_events", "ops_events",
+          "eras", "cpi_annual", "franchises", "shock_calendar"]
 
 
 class DataHubKnowledge:
@@ -104,7 +105,8 @@ class DataHubKnowledge:
             )
 
             promotable = [f for f in inv.findings
-                          if f.state in (VerificationState.VERIFIED, VerificationState.CONTESTED)]
+                          if f.state in (VerificationState.VERIFIED, VerificationState.REGIME,
+                                        VerificationState.CONTESTED)]
             for finding in promotable:
                 urn = make_dataset_urn(platform="genesis-studio",
                                        name=f"institutional_finding.{finding.id}", env="PROD")
@@ -126,6 +128,7 @@ class DataHubKnowledge:
                                      f"('{inv.question[:200]}'). Basis: {finding.basis}"),
                         customProperties={
                             "verification_state": finding.state.value,
+                "era_range": finding.era_range or "",
                             "domain": finding.domain,
                             "stats": str(finding.stats)[:900],
                             "sql": " || ".join(sqls)[:900],

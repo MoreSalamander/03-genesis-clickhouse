@@ -39,6 +39,7 @@ class InvestigationStatus(str, Enum):
 class VerificationState(str, Enum):
     VERIFIED = "VERIFIED"          # n >= policy, effect > noise, stable across splits
     WEAK = "WEAK"                  # signal present but under-powered
+    REGIME = "REGIME"              # true within an era range, not across the century
     CONTESTED = "CONTESTED"        # two analyses disagree — preserved, never resolved
     INSUFFICIENT = "INSUFFICIENT"  # the corpus cannot answer; said plainly
 
@@ -79,6 +80,7 @@ class Finding(BaseModel):
     statement: str
     state: VerificationState
     basis: str = ""                                        # how the rules derived the state
+    era_range: str | None = None                           # REGIME: the eras it holds in
     stats: dict[str, float] = Field(default_factory=dict)
     evidence_query_ids: list[str] = Field(default_factory=list)
 

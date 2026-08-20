@@ -21,9 +21,14 @@ class VerificationPolicy:
     These are studio analytical policy, applied in code — never asserted by the model.
     """
 
-    min_cohort_n: int = 30          # VERIFIED requires at least this many observations
-    effect_over_noise: float = 1.0  # |effect| must exceed this multiple of the dispersion
-    stability_splits: int = 2       # effect must hold across this many comparison splits
+    min_cohort_n: int = 30          # observations of the COMPARED UNIT (titles when the
+                                    # SQL counted them; annotated row-grain fallback)
+    effect_over_noise: float = 0.10 # effect size vs POOLED dispersion (Cohen's-d shaped,
+                                    # scale-free — n cannot buy significance). Calibrated
+                                    # against the corpus: observational effects here run
+                                    # d 0.1-0.3, and the ERA GATE carries the rigor —
+                                    # small-but-stable-for-a-century beats large-and-lucky
+    min_stable_eras: int = 3        # eras agreeing -> VERIFIED; fewer WITH DATA -> REGIME
 
 
 @dataclass(frozen=True)
@@ -81,6 +86,10 @@ class Settings:
     minio_secret_key: str = field(default_factory=lambda: os.getenv("MINIO_SECRET_KEY", "minioadmin").strip())
     ingest_sources: str = field(default_factory=lambda: os.getenv("INGEST_SOURCES", "").strip())
     verification: VerificationPolicy = field(default_factory=VerificationPolicy)
+    # The corpus: Convergence Studios, founded 1912 — ~4,600 titles, ten eras,
+    # ~100M fact rows. Seed-side knobs (volume dials, era config) live in seed/config.py.
+    corpus_start_year: int = 1912
+    corpus_horizon_year: int = 2026
 
     @property
     def clickhouse_live(self) -> bool:
