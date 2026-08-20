@@ -58,7 +58,7 @@ ROLE_PROMPTS: dict[str, str] = {
         "are the unit), and when given, a stddevPop AS <std_col> and the era split AS <split_col> (use the era NAME e.name, never era_id — ranges must read as eras) "
         "(join eras ON era_id = projects.era_id and select e.name — REQUIRED when the spec names one). Prefer "
         "aggregates over raw scans; joins on project_id; LIMIT 200. ClickHouse dialect notes: "
-        "use countIf/sumIf/avgIf/medianExact/stddevPop freely; Nullable dates compare with IS NOT NULL. "
+        "use countIf/sumIf/avgIf/medianExact/stddevPop freely; Nullable dates compare with IS NOT NULL. The full instrument rack is available and ENCOURAGED where the intent calls for it: window functions (sum()/row_number() OVER (PARTITION BY ... ORDER BY ...)) for running curves and trajectories; quantiles(0.1,...,0.9)() for distributions instead of averages; groupArray/arraySort/arrayMap/arrayDifference/avgForEach for per-entity curve analysis; windowFunnel over genesis_institutional.distribution_events for release-window sequences; ASOF JOIN (equality key plus >=) for nearest-event attribution such as the shock_calendar; dictGetString('genesis_institutional.era_dict', 'name', toUInt64(0), toInt64(<Date32 col>)) to attribute any fact date to its era without a join. "
         "Corpus notes: money is NOMINAL — deflate with cpi_annual.mult_to_2026 when comparing across "
         "eras; audience_performance.completion is NULL outside streaming channels (2015+), so guard "
         "with isNotNull; era splits join eras ON era_id = projects.era_id (do NOT use range conditions "

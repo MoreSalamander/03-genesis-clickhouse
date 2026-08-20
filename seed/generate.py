@@ -106,6 +106,47 @@ def migrate(client, recreate: bool) -> str:
     return "truncated (idempotent reseed, MV targets included)"
 
 
+def create_era_dictionary(client) -> None:
+    """RANGE_HASHED dictionary over the eras table.
+
+    CH 24.8 rejects range conditions inside JOIN ON, so fact-date era
+    attribution ("which era was this dollar EARNED in") would need a CROSS
+    JOIN + WHERE. dictGetString('era_dict', 'name', 0, at) answers it at hash
+    speed instead — a named deep-dive capability, wired for the showcase.
+    Created by the seeder because the source clause carries the writer login.
+    """
+    from app.config import settings
+
+    client.command("DROP DICTIONARY IF EXISTS genesis_institutional.era_dict")
+    # constant key + era ranges = pure date→era lookup; ranges as Int64 days
+    # because the corpus predates the Date epoch (Date32 → toInt64 is stable)
+    client.command(f"""
+        CREATE DICTIONARY genesis_institutional.era_dict (
+            k UInt64,
+            start_d Int64,
+            end_d Int64,
+            era_id UInt8,
+            name String
+        )
+        PRIMARY KEY k
+        SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER '{settings.clickhouse_writer_user}'
+                          PASSWORD '{settings.clickhouse_writer_password}'
+                          DB 'genesis_institutional'
+                          QUERY 'SELECT toUInt64(0) AS k,
+                                        toInt64(start_date) AS start_d, toInt64(end_date) AS end_d,
+                                        era_id, name
+                                 FROM genesis_institutional.eras'))
+        LAYOUT(RANGE_HASHED())
+        RANGE(MIN start_d MAX end_d)
+        LIFETIME(MIN 0 MAX 0)
+    """)
+    probe = client.query(
+        "SELECT dictGetString('genesis_institutional.era_dict', 'name', "
+        "toUInt64(0), toInt64(toDate32('1975-06-20')))").result_rows[0][0]
+    assert probe == "blockbuster", f"era_dict probe returned {probe!r}"
+    print(f"[seed] era_dict: dictGet('1975-06-20') → {probe!r}")
+
+
 def seed_dims(client) -> None:
     client.insert("eras", eras.rows(),
                   column_names=["era_id", "name", "start_date", "end_date", "summary"])
@@ -136,6 +177,7 @@ def main() -> int:
 
     print(f"[seed] schema: {migrate(client, recreate)}")
     seed_dims(client)
+    create_era_dictionary(client)
 
     projects, franchise_rows = slate.build()
     client.insert("projects", slate.project_rows(projects),

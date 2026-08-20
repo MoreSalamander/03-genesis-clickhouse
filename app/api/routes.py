@@ -157,6 +157,32 @@ def decide(inv_id: str, body: DecisionRequest, background: BackgroundTasks) -> d
     return {"id": inv.id, "decision": body.decision, "status": "processing", "execution": execution}
 
 
+@router.get("/showcase")
+def showcase() -> list[dict]:
+    """The deep-dive capabilities, run live through the read-only MCP path.
+
+    Seven queries, each exercising a named ClickHouse feature the ordinary
+    loop never touches (windows, windowFunnel, quantiles, arrays, ASOF,
+    argMax, dictGet), each with its timing — the SQL itself is the exhibit.
+    """
+    from app.showcase import SHOWCASE
+
+    runtime = get_runtime()
+    out = []
+    for key, item in SHOWCASE.items():
+        try:
+            result = runtime.clickhouse.run_query(item["sql"])
+            out.append({"key": key, "feature": item["feature"], "story": item["story"],
+                        "sql": item["sql"].strip(), "columns": result.columns,
+                        "rows": result.rows[:20], "row_count": result.row_count,
+                        "elapsed_ms": round(result.elapsed_ms, 1), "error": None})
+        except Exception as err:            # one broken exhibit must not hide the rest
+            out.append({"key": key, "feature": item["feature"], "story": item["story"],
+                        "sql": item["sql"].strip(), "columns": [], "rows": [],
+                        "row_count": 0, "elapsed_ms": 0.0, "error": str(err)[:300]})
+    return out
+
+
 @router.get("/events")
 def events(limit: int = 150) -> list[dict]:
     return get_runtime().bus.tail(limit)

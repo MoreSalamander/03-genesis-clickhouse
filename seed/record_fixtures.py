@@ -23,6 +23,13 @@ MATCHES = {
     "overrun_schedule_coupling": "event_type = 'schedule_slip'",
     "scenario_cohort_windows": "p.budget_usd * c.mult_to_2026 BETWEEN",
     "corpus_summary": "GROUP BY status ORDER BY n DESC",
+    "showcase_cash_curves": "WINDOW w AS",
+    "showcase_collapsing_window": "windowFunnel(365)",
+    "showcase_revenue_quantiles": "quantiles(0.1, 0.25, 0.5, 0.75, 0.9)",
+    "showcase_franchise_fatigue_curves": "avgForEach(arrayResize",
+    "showcase_shock_attribution": "ASOF JOIN",
+    "showcase_superlatives": "argMax(concat(p.title",
+    "showcase_era_attribution_dict": "dictGetString",
 }
 
 
@@ -45,7 +52,9 @@ def main() -> int:
             "GROUP BY status ORDER BY n DESC"
         ),
     }
-    all_sql = {**CANONICAL_SQL, **extra_sql}
+    from app.showcase import SHOWCASE
+    showcase_sql = {f"showcase_{k}": v["sql"] for k, v in SHOWCASE.items()}
+    all_sql = {**CANONICAL_SQL, **extra_sql, **showcase_sql}
     missing = sorted(set(all_sql) - set(MATCHES))
     if missing:
         raise SystemExit(f"[fixtures] no MATCHES key for canonical queries: {missing} — "
