@@ -19,6 +19,7 @@ FEATURE_MARKERS = {
     "shock_attribution": "ASOF JOIN",
     "superlatives": "argMax(",
     "era_attribution_dict": "dictGetString(",
+    "database_drawn_charts": "sparkbar(",
 }
 
 

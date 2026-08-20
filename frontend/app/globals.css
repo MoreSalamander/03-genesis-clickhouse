@@ -430,3 +430,56 @@ details.explain pre {
   border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
 }
 .exhibit-head .cost em { font-style: normal; color: var(--accent); }
+
+/* --- the century wall (components/CenturyWall.tsx) -------------------------- */
+.wall-section { position: relative; }
+.century-wall { position: relative; }
+.century-wall svg { width: 100%; height: auto; display: block; }
+.wall-shock { fill: var(--ink); opacity: 0.07; }
+.wall-era-rule { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
+.wall-era-name { font: 600 8.5px var(--mono); fill: var(--ink-faint);
+  letter-spacing: 0.05em; text-transform: uppercase; }
+.wall-crosshair { stroke: var(--ink); stroke-width: 1; opacity: 0.5; }
+.wall-year { font: 9px var(--mono); fill: var(--ink-faint); text-anchor: middle; }
+.wall-tooltip {
+  position: absolute; top: 8px; transform: translateX(-50%);
+  background: var(--paper-raised); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 7px 10px; pointer-events: none; z-index: 4;
+  box-shadow: 0 2px 8px rgba(28, 33, 29, 0.12); max-width: 260px;
+}
+.wt-year { font: 700 11px var(--mono); color: var(--ink); margin-bottom: 4px; }
+.wt-row { font: 10.5px var(--mono); color: var(--ink-soft); display: flex;
+  align-items: center; gap: 6px; }
+.wt-swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex: none; }
+.wall-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; margin-top: 8px; }
+.wl-item { font: 10.5px var(--mono); color: var(--ink-soft); display: inline-flex;
+  align-items: center; gap: 6px; }
+.wl-note { font: 10px var(--mono); color: var(--ink-faint); margin-left: auto; }
+
+/* --- exhibit charts (components/ExhibitChart.tsx) --------------------------- */
+.xchart { width: 100%; max-width: 620px; height: auto; display: block; margin: 4px 0 12px; }
+.x-base { stroke: var(--rule); stroke-width: 1; }
+.x-tick { font: 9.5px var(--mono); fill: var(--ink-faint); }
+.x-num { font: 9.5px var(--mono); fill: var(--ink-soft); }
+.x-label { font: 600 9.5px var(--mono); }
+.x-context { fill: none; stroke: var(--rule); stroke-width: 1.5; }
+.mono-cell { font-family: var(--mono); white-space: pre; letter-spacing: 0; }
+
+/* --- scan meter + era lens --------------------------------------------------- */
+.scan-meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 14px; }
+@media (max-width: 700px) { .scan-meter { grid-template-columns: repeat(2, 1fr); } }
+.sm-tile {
+  border: 1px solid var(--rule); border-radius: 4px; padding: 8px 12px;
+  background: var(--paper-raised); display: flex; flex-direction: column; gap: 1px;
+}
+.sm-tile b { font: 700 16px var(--mono); color: var(--ink); }
+.sm-tile span { font: 9.5px var(--mono); color: var(--ink-faint); letter-spacing: 0.04em; }
+.era-cell { cursor: pointer; background: none; }
+.era-cell.on { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
+.era-lens { margin: 6px 0 4px; }
+.el-head { font: 11px var(--mono); color: var(--ink-soft); margin-bottom: 5px; }
+.era-lens table { border-collapse: collapse; font: 10.5px var(--mono); }
+.era-lens th, .era-lens td {
+  border: 1px solid var(--rule); padding: 3px 7px; text-align: left; white-space: nowrap;
+}
+.era-lens th { background: var(--paper-inset); color: var(--ink-faint); font-weight: 600; }

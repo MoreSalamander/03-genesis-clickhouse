@@ -18,6 +18,7 @@ import { Interpretations } from "@/components/Interpretations";
 import { SimulationPanel } from "@/components/SimulationPanel";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { EngineRoom } from "@/components/EngineRoom";
+import { CenturyWall } from "@/components/CenturyWall";
 import { QueryCost, SufficiencyChannel, getInvestigationCosts, getSufficiency } from "@/lib/api";
 import { Elapsed, EmptyState, Note, Pulse, RuntimeBar, cascade, proofItems, proofState } from "@/lib/alive";
 
@@ -148,6 +149,11 @@ export default function Workbench() {
         ))}
       </div>
 
+      <section className="section wall-section">
+        <h2>A century of us <span className="count">the whole corpus as one picture — every feature on it is a probe-verified truth</span></h2>
+        <CenturyWall />
+      </section>
+
       <div className="question-bar">
         <label>Studio Head question — what should our history tell us?</label>
         <div className="question-row">
@@ -220,6 +226,25 @@ export default function Workbench() {
 
           <div className="two-col">
             <div>
+              {Object.keys(costs).length > 0 && (
+                <div className="scan-meter">
+                  {(() => {
+                    const cs = Object.values(costs);
+                    const rows = cs.reduce((a, c) => a + c.read_rows, 0);
+                    const bytes = cs.reduce((a, c) => a + c.read_bytes, 0);
+                    const years = new Set(cs.flatMap((c) => c.years_touched)).size;
+                    const ms = cs.reduce((a, c) => a + c.duration_ms, 0);
+                    return (
+                      <>
+                        <div className="sm-tile"><b>{rows >= 1e6 ? `${(rows / 1e6).toFixed(1)}M` : rows.toLocaleString()}</b><span>rows read for this question</span></div>
+                        <div className="sm-tile"><b>{years}</b><span>of 115 years touched</span></div>
+                        <div className="sm-tile"><b>{(bytes / 1e6).toFixed(0)}MB</b><span>scanned</span></div>
+                        <div className="sm-tile"><b>{Math.round(ms)}ms</b><span>total engine time</span></div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
               <section className="section">
                 <h2>Query ledger <span className="count">{active.queries.length} executed · every number auditable</span></h2>
                 <QueryLedger queries={active.queries} costs={costs} />

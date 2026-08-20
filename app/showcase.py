@@ -155,6 +155,24 @@ JOIN {DB}.cpi_annual c ON c.year = toYear(p.greenlit_at)
 WHERE p.project_type = 'feature' AND p.released_at IS NOT NULL
 LIMIT 200""",
     },
+    "database_drawn_charts": {
+        "feature": "bar() / sparkbar()",
+        "story": "The chart arrives INSIDE the result: each channel's whole century arc, "
+                 "drawn by the database as a sparkline — births, booms, and deaths visible "
+                 "with no visualization layer at all.",
+        "sql": f"""
+SELECT channel,
+       sparkbar(60)(y, rev) AS century_arc,
+       toString(min(y)) || '–' || toString(max(y)) AS active_years
+FROM (
+    SELECT channel, toYear(month) AS y, sum(revenue) AS rev
+    FROM {DB}.audience_monthly
+    GROUP BY channel, y
+)
+GROUP BY channel
+ORDER BY min(y), channel
+LIMIT 200""",
+    },
     "era_attribution_dict": {
         "feature": "range dictionary (dictGet)",
         "story": "91 million rows attributed to the era the money was EARNED in — one "

@@ -30,6 +30,8 @@ MATCHES = {
     "showcase_shock_attribution": "ASOF JOIN",
     "showcase_superlatives": "argMax(concat(p.title",
     "showcase_era_attribution_dict": "dictGetString",
+    "showcase_database_drawn_charts": "sparkbar(",
+    "century_wall": "AS channel_group",
 }
 
 
@@ -53,8 +55,10 @@ def main() -> int:
         ),
     }
     from app.showcase import SHOWCASE
+    from app.api.routes import CENTURY_SQL
     showcase_sql = {f"showcase_{k}": v["sql"] for k, v in SHOWCASE.items()}
-    all_sql = {**CANONICAL_SQL, **extra_sql, **showcase_sql}
+    all_sql = {**CANONICAL_SQL, **extra_sql, **showcase_sql,
+               "century_wall": CENTURY_SQL}
     missing = sorted(set(all_sql) - set(MATCHES))
     if missing:
         raise SystemExit(f"[fixtures] no MATCHES key for canonical queries: {missing} — "

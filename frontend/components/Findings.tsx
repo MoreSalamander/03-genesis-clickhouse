@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AnalyticalQuery, Finding, Interpretation } from "@/lib/api";
 import { cascade } from "@/lib/alive";
 
@@ -132,24 +133,46 @@ function EffectGauge({ ratio, threshold }: { ratio: number; threshold: number })
   );
 }
 
-/** Which eras agree with the overall effect (filled), which disagree (warned),
- *  which had no data (empty) — the era lens's atom, one cell per era with data. */
-function EraStrip({ agreement }: { agreement: Record<string, number> }) {
-  const entries = Object.entries(agreement);
-  if (entries.length === 0) return null;
+function EraLens({ finding, queries }: { finding: Finding; queries: AnalyticalQuery[] }) {
+  const [era, setEra] = useState<string | null>(null);
+  const agreement = finding.era_agreement ?? {};
+  if (Object.keys(agreement).length === 0) return null;
+  const primary = finding.evidence_query_ids
+    .map((id) => queries.find((q) => q.id === id))
+    .filter((q): q is AnalyticalQuery => !!q)
+    .sort((a, b) => (b.computed_stats?.effect_over_noise ?? 0) - (a.computed_stats?.effect_over_noise ?? 0))[0];
+  const eraCol = primary?.columns.findIndex((c) => ["era", "era_name", "decade", "period", "regime"].includes(c.toLowerCase())) ?? -1;
+  const eraRows = era && primary && eraCol >= 0
+    ? primary.rows.filter((r) => String(r[eraCol]) === era).slice(0, 6) : [];
   return (
-    <div className="era-strip" title="era-by-era direction of the primary effect">
-      {entries.map(([era, sign]) => (
-        <span key={era} className={`era-cell ${sign > 0 ? "agree" : "disagree"}`}
-              title={`${era.replaceAll("_", " ")}: ${sign > 0 ? "agrees" : "disagrees"}`}>
-          {era.replaceAll("_", " ")}
-        </span>
-      ))}
-    </div>
+    <>
+      <div className="era-strip" title="era-by-era direction — click an era to scope the numbers">
+        {Object.entries(agreement).map(([e, sign]) => (
+          <button key={e} className={`era-cell ${sign > 0 ? "agree" : "disagree"}${era === e ? " on" : ""}`}
+                  onClick={() => setEra(era === e ? null : e)}
+                  title={`${e.replaceAll("_", " ")}: ${sign > 0 ? "agrees" : "disagrees"} — click to scope`}>
+            {e.replaceAll("_", " ")}
+          </button>
+        ))}
+      </div>
+      {era && primary && eraRows.length > 0 && (
+        <div className="era-lens">
+          <div className="el-head">
+            scoped to <b>{era.replaceAll("_", " ")}</b> — {agreement[era] > 0 ? "agrees with" : "runs AGAINST"} the century direction
+          </div>
+          <table>
+            <thead><tr>{primary.columns.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+            <tbody>{eraRows.map((r, i) => (
+              <tr key={i}>{r.map((cell, j) => <td key={j}>{String(cell)}</td>)}</tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+    </>
   );
 }
 
-function PlainFinding({ finding }: { finding: Finding }) {
+function PlainFinding({ finding, queries = [] }: { finding: Finding; queries?: AnalyticalQuery[] }) {
   const ratio = finding.stats.effect_over_noise;
   return (
     <div className="finding">
@@ -164,7 +187,7 @@ function PlainFinding({ finding }: { finding: Finding }) {
         {Object.keys(finding.stats).length > 0 && (
           <div className="stats">{statLine(finding.stats)}</div>
         )}
-        {finding.era_agreement && <EraStrip agreement={finding.era_agreement} />}
+        <EraLens finding={finding} queries={queries} />
         {ratio !== undefined && <EffectGauge ratio={ratio} threshold={finding.stats.threshold ?? 0.1} />}
       </div>
     </div>
@@ -187,7 +210,7 @@ export function Findings({ findings, queries = [], interpretations = [] }: {
         <div key={finding.id} style={cascade(i)}>
           {finding.state === "CONTESTED"
             ? <ContestedFinding finding={finding} queries={queries} interpretations={interpretations} />
-            : <PlainFinding finding={finding} />}
+            : <PlainFinding finding={finding} queries={queries} />}
         </div>
       ))}
     </div>

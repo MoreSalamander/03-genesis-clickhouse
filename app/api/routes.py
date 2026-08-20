@@ -157,6 +157,42 @@ def decide(inv_id: str, body: DecisionRequest, background: BackgroundTasks) -> d
     return {"id": inv.id, "decision": body.decision, "status": "processing", "execution": execution}
 
 
+# the wall plots REAL dollars — the corpus's own rule: cross-era money deflates
+CENTURY_SQL = (
+    "SELECT toYear(a.month) AS y, "
+    "multiIf(a.channel IN ('theatrical', 'theatrical_reissue'), 'theatrical', "
+    "        a.channel IN ('tv_licensing', 'syndication', 'pay_cable'), 'television', "
+    "        a.channel IN ('home_video', 'ppv_vod', 'est', 'pvod'), 'home_video', "
+    "        a.channel = 'streaming_licensed', 'licensed_streaming', "
+    "        'convergence_plus') AS channel_group, "
+    "round(sum(a.revenue * c.mult_to_2026) / 1e6, 1) AS revenue_2026_m "
+    "FROM genesis_institutional.audience_monthly a "
+    "JOIN genesis_institutional.cpi_annual c ON c.year = toYear(a.month) "
+    "GROUP BY y, channel_group ORDER BY y, channel_group"
+)
+
+
+@router.get("/century")
+def century() -> dict:
+    """The whole corpus as one picture: yearly revenue by channel group, plus
+    the era boundaries and shock windows that explain its shape."""
+    runtime = get_runtime()
+    try:
+        series = runtime.clickhouse.run_query(CENTURY_SQL, tag="century")
+        eras = runtime.clickhouse.run_query(
+            "SELECT era_id, name, toYear(start_date) AS from_year, toYear(end_date) AS to_year "
+            "FROM genesis_institutional.eras ORDER BY era_id")
+        shocks = runtime.clickhouse.run_query(
+            "SELECT name, toYear(start_date) AS from_year, toYear(end_date) AS to_year, "
+            "attendance_mult FROM genesis_institutional.shock_calendar "
+            "WHERE attendance_mult != 1 ORDER BY start_date")
+        return {"series": series.as_dicts(), "eras": eras.as_dicts(),
+                "shocks": shocks.as_dicts(), "mode": "live"}
+    except Exception as err:
+        return {"series": [], "eras": [], "shocks": [], "mode": "mock",
+                "note": str(err)[:200]}
+
+
 @router.get("/showcase")
 def showcase() -> list[dict]:
     """The deep-dive capabilities, run live through the read-only MCP path.

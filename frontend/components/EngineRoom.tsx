@@ -8,6 +8,7 @@
    what the engine was asked. */
 import { useEffect, useState } from "react";
 import { QueryCost, getShowcaseCosts } from "@/lib/api";
+import { ExhibitChart } from "@/components/ExhibitChart";
 
 interface ShowcaseItem {
   key: string;
@@ -62,18 +63,21 @@ export function EngineRoom() {
               {item.error
                 ? <div className="err">{item.error}</div>
                 : (
+                  <>
+                  <ExhibitChart item={item} />
                   <div className="exhibit-result">
                     <table>
                       <thead><tr>{item.columns.map((c) => <th key={c}>{c}</th>)}</tr></thead>
                       <tbody>
                         {item.rows.slice(0, 10).map((row, i) => (
                           <tr key={i}>{row.map((cell, j) => (
-                            <td key={j}>{Array.isArray(cell) ? JSON.stringify(cell) : String(cell)}</td>
+                            <td key={j} className={item.key === "database_drawn_charts" ? "mono-cell" : undefined}>{Array.isArray(cell) ? JSON.stringify(cell) : String(cell)}</td>
                           ))}</tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  </>
                 )}
               <pre className="exhibit-sql">{item.sql}</pre>
             </div>
