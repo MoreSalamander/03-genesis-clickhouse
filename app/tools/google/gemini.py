@@ -27,18 +27,26 @@ ROLE_PROMPTS: dict[str, str] = {
         "(strategic_pattern insights emerge in synthesis). Use the provided table schemas. Return JSON: "
         "{\"hypotheses\": [{\"domain\": str, \"statement\": str (a falsifiable claim about the corpus), "
         "\"rationale\": str, \"intents\": [{\"purpose\": str (what one SQL query should measure), "
-        "\"verification\": {\"metric_col\": str, \"group_col\": str, \"n_col\": str, \"std_col\": str|null, "
-        "\"split_col\": str|null}}]}]}. 3-5 hypotheses total, 1-2 intents each. Each intent must be "
+        "\"verification\": {\"metric_col\": str, \"group_col\": str, \"n_col\": str, \"titles_col\": str|null, "
+        "\"std_col\": str|null, \"split_col\": str|null}}]}]}. 3-5 hypotheses total, 1-2 intents each. Each intent must be "
         "answerable by ONE aggregate SELECT whose result includes the verification columns: a grouping "
-        "column, a numeric metric, an observation count (n_col), and where meaningful a stddev column "
-        "and a second split column for stability checks. Two structural requirements: (1) at least ONE "
-        "hypothesis must be testable on a HIGH-VOLUME table (financial_ledger lines, audience_performance "
-        "daily rows, production_events) where per-group observation counts reach the thousands — "
-        "per-title cohorts in this corpus are small (~60 titles) and will verify as under-powered; "
-        "(2) for contested territory (e.g. sequel premium vs franchise fatigue) give the SAME hypothesis "
-        "two intents whose slicings could plausibly DISAGREE in direction (e.g. raw cross-cohort "
-        "comparison vs within-franchise comparison) — disagreement between a hypothesis's own analyses "
-        "is how the system surfaces contested truths."
+        "column, a numeric metric, an observation count (n_col), a TITLE-GRAIN count (titles_col — "
+        "power is judged on the number of titles compared, never on fact rows), a stddev column, "
+        "and an ERA SPLIT column (split_col) whenever the question permits one — cross-era "
+        "stability is what separates VERIFIED (institutional truth) from REGIME (era-bounded). The corpus is Convergence Studios' complete "
+        "history: ~4,600 titles across 114 years (1912-2026) in ten named industry eras (the `eras` "
+        "table; projects carry era_id). Three structural requirements: (1) money columns are NOMINAL "
+        "dollars of their year — any cross-era money comparison must deflate via cpi_annual "
+        "(mult_to_2026) or compare era-relative fields like budget_class; (2) prefer ERA-SCOPED cohorts "
+        "(join eras on era_id, or filter released_at ranges): a finding that holds across eras is "
+        "institutional truth, one that holds in a single era is a regime — both are worth surfacing, "
+        "and per-era title cohorts run in the hundreds while high-volume tables (audience_performance "
+        "daily rows, production_events, financial_ledger) reach the millions; (3) for contested "
+        "territory (e.g. sequel premium vs franchise fatigue) give the SAME hypothesis two intents "
+        "whose slicings could plausibly DISAGREE in direction (e.g. opening-window comparison vs "
+        "tail-share comparison) — disagreement between a hypothesis's own analyses is how the system "
+        "surfaces contested truths. For long trend scans prefer the monthly rollups "
+        "(audience_monthly, financial_monthly) over raw daily sweeps."
     ),
     "sql_generation": (
         "You are the Query Engineer for a film studio's analytical system on ClickHouse. Write ONE "
@@ -46,10 +54,17 @@ ROLE_PROMPTS: dict[str, str] = {
         "(never invent tables or columns). The result's OUTPUT COLUMN ALIASES must EXACTLY equal the "
         "names in the intent's verification spec — alias with AS: the grouping column AS <group_col>, "
         "the numeric metric AS <metric_col>, the per-group observation count AS <n_col> (use count()), "
-        "and when given, a stddevPop AS <std_col> and a second grouping AS <split_col>. Prefer "
+        "a title-grain count AS <titles_col> (use uniqExact(project_id) — REQUIRED whenever titles "
+        "are the unit), and when given, a stddevPop AS <std_col> and the era split AS <split_col> (use the era NAME e.name, never era_id — ranges must read as eras) "
+        "(join eras ON era_id = projects.era_id and select e.name — REQUIRED when the spec names one). Prefer "
         "aggregates over raw scans; joins on project_id; LIMIT 200. ClickHouse dialect notes: "
         "use countIf/sumIf/avgIf/medianExact/stddevPop freely; Nullable dates compare with IS NOT NULL. "
-        "Return JSON: {\"sql\": str, \"reasoning\": str (one sentence)}."
+        "Corpus notes: money is NOMINAL — deflate with cpi_annual.mult_to_2026 when comparing across "
+        "eras; audience_performance.completion is NULL outside streaming channels (2015+), so guard "
+        "with isNotNull; era splits join eras ON era_id = projects.era_id (do NOT use range conditions "
+        "inside JOIN ON — for date-range era attribution use CROSS JOIN eras plus a WHERE at BETWEEN "
+        "start_date AND end_date); channels are era-gated (no home_video before 1980, no streaming "
+        "before 2008). Return JSON: {\"sql\": str, \"reasoning\": str (one sentence)}."
     ),
     "sql_repair": (
         "You are the Query Engineer repairing a failed ClickHouse SELECT. Use the error message and the "
@@ -141,60 +156,90 @@ class GeminiCognition:
 
 CANONICAL_SQL = {
     "cohort_overrun_by_class": (
-        "SELECT p.budget_class AS budget_class, round(sum(f.actual)/sum(f.planned), 4) AS overrun_ratio, "
-        "count() AS n, round(stddevPop(f.actual/nullIf(f.planned,0)), 4) AS spend_std "
+        "SELECT p.budget_class AS budget_class, e.name AS era, "
+        "round(sum(f.actual)/sum(f.planned), 4) AS overrun_ratio, "
+        "count() AS n, uniqExact(p.project_id) AS n_titles, "
+        "round(stddevPop(f.actual/nullIf(f.planned,0)), 4) AS spend_std "
         "FROM genesis_institutional.financial_ledger f "
         "JOIN genesis_institutional.projects p ON p.project_id = f.project_id "
-        "GROUP BY p.budget_class ORDER BY overrun_ratio DESC LIMIT 200"
+        "JOIN genesis_institutional.eras e ON e.era_id = p.era_id "
+        "WHERE p.project_type = 'feature' "
+        "GROUP BY p.budget_class, e.era_id, e.name ORDER BY e.era_id, budget_class LIMIT 200"
+    ),
+    # the century's U-shape: factory-era discipline is the minimum, the 70s and
+    # the COVID era the peaks — era-qualified truth, not a single number
+    "overrun_by_era": (
+        "SELECT e.name AS era, p.budget_class AS budget_class, "
+        "round(sum(f.actual)/sum(f.planned), 4) AS overrun_ratio, "
+        "count() AS n, uniqExact(p.project_id) AS n_titles, "
+        "round(stddevPop(f.actual/nullIf(f.planned,0)), 4) AS spend_std "
+        "FROM genesis_institutional.financial_ledger f "
+        "JOIN genesis_institutional.projects p ON p.project_id = f.project_id "
+        "JOIN genesis_institutional.eras e ON e.era_id = p.era_id "
+        "GROUP BY e.era_id, e.name, p.budget_class ORDER BY e.era_id, budget_class LIMIT 200"
     ),
     "sequel_opening_premium": (
-        "SELECT p.is_sequel AS is_sequel, round(avg(t.open_ratio), 4) AS open_over_budget, "
-        "count() AS n, round(stddevPop(t.open_ratio), 4) AS ratio_std "
+        "SELECT p.is_sequel AS is_sequel, e.name AS era, round(avg(t.open_ratio), 4) AS open_over_budget, "
+        "count() AS n_titles, round(stddevPop(t.open_ratio), 4) AS ratio_std "
         "FROM (SELECT a.project_id, sum(a.revenue)/any(p2.budget_usd) AS open_ratio "
         "      FROM genesis_institutional.audience_performance a "
         "      JOIN genesis_institutional.projects p2 ON p2.project_id = a.project_id "
         "      WHERE p2.released_at IS NOT NULL AND a.at < p2.released_at + 30 "
+        "      AND a.channel IN ('theatrical', 'pvod') "
+        "      AND p2.released_at >= '1995-01-01' AND p2.project_type = 'feature' "
+        "      AND p2.franchise_id != '' "
         "      GROUP BY a.project_id) t "
         "JOIN genesis_institutional.projects p ON p.project_id = t.project_id "
-        "GROUP BY p.is_sequel ORDER BY is_sequel LIMIT 200"
+        "JOIN genesis_institutional.eras e ON e.era_id = p.era_id "
+        "GROUP BY p.is_sequel, e.era_id, e.name ORDER BY is_sequel, e.era_id LIMIT 200"
     ),
     "sequel_franchise_decay": (
-        "SELECT p.is_sequel AS is_sequel, round(avg(t.tail_share), 4) AS tail_share, "
-        "count() AS n, round(stddevPop(t.tail_share), 4) AS share_std "
+        "SELECT p.is_sequel AS is_sequel, e.name AS era, round(avg(t.tail_share), 4) AS tail_share, "
+        "count() AS n_titles, round(stddevPop(t.tail_share), 4) AS share_std "
         "FROM (SELECT a.project_id, sumIf(a.revenue, a.at >= p2.released_at + 365)/sum(a.revenue) AS tail_share "
         "      FROM genesis_institutional.audience_performance a "
         "      JOIN genesis_institutional.projects p2 ON p2.project_id = a.project_id "
         "      WHERE p2.franchise != '' AND p2.released_at IS NOT NULL "
+        "      AND p2.released_at >= '1995-01-01' AND p2.released_at < '2023-08-01' "
+        "      AND p2.project_type = 'feature' "
         "      GROUP BY a.project_id) t "
         "JOIN genesis_institutional.projects p ON p.project_id = t.project_id "
-        "GROUP BY p.is_sequel ORDER BY is_sequel LIMIT 200"
+        "JOIN genesis_institutional.eras e ON e.era_id = p.era_id "
+        "GROUP BY p.is_sequel, e.era_id, e.name ORDER BY is_sequel, e.era_id LIMIT 200"
     ),
+    # the regime flip: summer is a modern invention (1975-06-20, to the day)
     "release_window_seasonality": (
         "SELECT p.release_window AS release_window, round(avg(a.revenue), 2) AS daily_revenue, "
-        "count() AS n, round(stddevPop(a.revenue), 2) AS revenue_std, "
-        "if(toYear(a.at) >= 2021, 'post2021', 'pre2021') AS era "
+        "count() AS n, uniqExact(p.project_id) AS n_titles, round(stddevPop(a.revenue), 2) AS revenue_std, "
+        "if(p.released_at < '1975-06-20', 'pre_blockbuster', 'blockbuster_era') AS era "
         "FROM genesis_institutional.audience_performance a "
         "JOIN genesis_institutional.projects p ON p.project_id = a.project_id "
-        "WHERE a.at < p.released_at + 90 "
+        "WHERE a.at < p.released_at + 90 AND a.channel IN ('theatrical', 'theatrical_reissue') "
         "GROUP BY p.release_window, era ORDER BY p.release_window, era LIMIT 200"
     ),
     "overrun_schedule_coupling": (
-        "SELECT p.budget_class AS budget_class, round(avg(s.slip_days), 2) AS avg_slip_days, "
-        "count() AS n, round(stddevPop(s.slip_days), 2) AS slip_std "
+        "SELECT p.budget_class AS budget_class, e.name AS era, round(avg(s.slip_days), 2) AS avg_slip_days, "
+        "count() AS n_titles, round(stddevPop(s.slip_days), 2) AS slip_std "
         "FROM (SELECT project_id, sum(value) AS slip_days "
         "      FROM genesis_institutional.production_events WHERE event_type = 'schedule_slip' "
         "      GROUP BY project_id) s "
         "JOIN genesis_institutional.projects p ON p.project_id = s.project_id "
-        "GROUP BY p.budget_class ORDER BY avg_slip_days DESC LIMIT 200"
+        "JOIN genesis_institutional.eras e ON e.era_id = p.era_id "
+        "GROUP BY p.budget_class, e.era_id, e.name ORDER BY e.era_id, avg_slip_days DESC LIMIT 200"
     ),
+    # money is nominal — the cohort band deflates through cpi_annual so a 1989
+    # picture and a 2019 picture qualify on the same real-dollar terms
     "scenario_cohort_windows": (
         "SELECT p.release_window AS release_window, p.title AS title, "
         "round(sum(a.revenue)/any(p.budget_usd), 4) AS rev_multiple "
         "FROM genesis_institutional.audience_performance a "
         "JOIN genesis_institutional.projects p ON p.project_id = a.project_id "
-        "WHERE p.genre IN ('scifi','fantasy','action','animation','thriller') AND p.budget_usd BETWEEN 10000000 AND 120000000 "
+        "JOIN genesis_institutional.cpi_annual c ON c.year = toYear(p.released_at) "
+        "WHERE p.budget_usd * c.mult_to_2026 BETWEEN 20000000 AND 250000000 "
+        "AND p.released_at >= '1985-01-01' AND p.project_type = 'feature' "
         "AND p.released_at IS NOT NULL "
-        "GROUP BY p.release_window, p.title ORDER BY p.release_window, rev_multiple LIMIT 200"
+        "GROUP BY p.release_window, p.title ORDER BY p.release_window, rev_multiple "
+        "LIMIT 50 BY p.release_window LIMIT 200"
     ),
 }
 
@@ -218,28 +263,40 @@ class MockCognition:
                  "rationale": "Planned-vs-actual ledger history is the studio's strongest predictor of budget risk.",
                  "intents": [{"purpose": "canonical:cohort_overrun_by_class",
                               "verification": {"metric_col": "overrun_ratio", "group_col": "budget_class",
-                                               "n_col": "n", "std_col": "spend_std", "split_col": None}}]},
+                                               "n_col": "n", "titles_col": "n_titles",
+                                               "std_col": "spend_std", "split_col": "era"}}]},
                 {"domain": "audience_distribution",
                  "statement": "Sequels outperform originals — or underperform once decay is controlled: the corpus decides.",
                  "rationale": "Sequel economics drive the premium-vs-fatigue tension in every greenlight.",
                  "intents": [{"purpose": "canonical:sequel_opening_premium",
                               "verification": {"metric_col": "open_over_budget", "group_col": "is_sequel",
-                                               "n_col": "n", "std_col": "ratio_std", "split_col": None}},
+                                               "n_col": "n_titles", "titles_col": "n_titles",
+                                               "std_col": "ratio_std", "split_col": "era"}},
                              {"purpose": "canonical:sequel_franchise_decay",
                               "verification": {"metric_col": "tail_share", "group_col": "is_sequel",
-                                               "n_col": "n", "std_col": "share_std", "split_col": None}}]},
+                                               "n_col": "n_titles", "titles_col": "n_titles",
+                                               "std_col": "share_std", "split_col": "era"}}]},
                 {"domain": "audience_distribution",
                  "statement": "Release window materially shifts early revenue (Q2/Q4 premium).",
                  "rationale": "Window choice is a controllable lever in the proposal.",
                  "intents": [{"purpose": "canonical:release_window_seasonality",
                               "verification": {"metric_col": "daily_revenue", "group_col": "release_window",
-                                               "n_col": "n", "std_col": "revenue_std", "split_col": "era"}}]},
+                                               "n_col": "n", "titles_col": "n_titles",
+                                               "std_col": "revenue_std", "split_col": "era"}}]},
                 {"domain": "operational_history",
                  "statement": "Schedule slips concentrate in larger productions, coupling delivery risk to budget class.",
                  "rationale": "Slip history calibrates the operational risk of the proposal.",
                  "intents": [{"purpose": "canonical:overrun_schedule_coupling",
                               "verification": {"metric_col": "avg_slip_days", "group_col": "budget_class",
-                                               "n_col": "n", "std_col": "slip_std", "split_col": None}}]},
+                                               "n_col": "n_titles", "titles_col": "n_titles",
+                                               "std_col": "slip_std", "split_col": "era"}}]},
+                {"domain": "financial_performance",
+                 "statement": "Overrun discipline is era-dependent: the studio-system factory was the century's minimum, and the 1970s and 2020s its peaks.",
+                 "rationale": "A century of ledger history says when the studio was disciplined — and what conditions broke it.",
+                 "intents": [{"purpose": "canonical:overrun_by_era",
+                              "verification": {"metric_col": "overrun_ratio", "group_col": "era",
+                                               "n_col": "n", "titles_col": "n_titles",
+                                               "std_col": "spend_std", "split_col": "budget_class"}}]},
             ]
         }
 
@@ -257,6 +314,7 @@ class MockCognition:
 
     def _interpretation(self, payload: dict) -> dict:
         contested = [f for f in payload.get("findings", []) if f.get("state") == "CONTESTED"]
+        regime = [f for f in payload.get("findings", []) if f.get("state") == "REGIME"]
         interpretations = [
             {"label": "Scale discipline", "stance": "risk",
              "narrative": "Overrun ratios rise monotonically with budget class in the ledger history; "
@@ -276,6 +334,13 @@ class MockCognition:
                  "cited_query_ids": payload.get("query_ids", [])[2:3],
                  "cited_finding_ids": [contested[0].get("id", "")]},
             ]
+        if regime:
+            interpretations.append(
+                {"label": "Era-bounded truth", "stance": "context",
+                 "narrative": f"This holds within {regime[0].get('era_range') or 'a bounded era range'} "
+                              "and not across the century — treat it as a regime of the current "
+                              "industry structure, not a law of the studio.",
+                 "cited_query_ids": [], "cited_finding_ids": [regime[0].get("id", "")]})
         return {"interpretations": interpretations}
 
     def _scenario_frame(self, payload: dict) -> dict:
@@ -302,7 +367,10 @@ class MockCognition:
                          "economics remain contested in our own history — openings run ahead of originals "
                          "while franchise tails decay faster — and both readings are preserved.",
             "caveats": (["Sequel premium vs franchise fatigue is CONTESTED — do not treat either as settled."]
-                        if contested else []) + ["Statistics summarize the studio's own corpus, not the market."],
+                        if contested else [])
+                       + (["At least one finding is REGIME: true within its era range only — "
+                           "check its bounds before acting on it."] if coverage.get("REGIME", 0) else [])
+                       + ["Statistics summarize the studio's own corpus, not the market."],
         }
 
 

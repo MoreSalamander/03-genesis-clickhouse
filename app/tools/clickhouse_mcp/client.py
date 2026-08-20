@@ -136,14 +136,31 @@ class LiveClickHouseMCP:
             raise ClickHouseUnavailable(f"unparseable run_query payload: {text[:200]}") from err
 
     def list_tables(self) -> list[dict]:
-        text = self._call("list_tables", {"database": self.database})
-        try:
-            payload = json.loads(text)
-        except json.JSONDecodeError:
-            return [{"raw": text}]
-        if isinstance(payload, dict):
-            return payload.get("tables", payload.get("items", [payload]))
-        return payload
+        """All tables, following pagination — 14 objects can exceed one page.
+
+        mcp-clickhouse supports page_token/page_size (verified in ADR 0001);
+        stopping at page one would silently truncate the schema grounding.
+        """
+        tables: list[dict] = []
+        token = ""
+        for _ in range(10):                        # hard bound, never spin
+            args: dict = {"database": self.database}
+            if token:
+                args["page_token"] = token
+            text = self._call("list_tables", args)
+            try:
+                payload = json.loads(text)
+            except json.JSONDecodeError:
+                return tables or [{"raw": text}]
+            if isinstance(payload, dict):
+                tables.extend(payload.get("tables", payload.get("items", [payload])))
+                token = str(payload.get("next_page_token", "") or "")
+                if not token:
+                    break
+            else:
+                tables.extend(payload)
+                break
+        return tables
 
     def list_databases(self) -> list[str]:
         text = self._call("list_databases", {})

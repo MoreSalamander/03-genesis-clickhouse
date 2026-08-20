@@ -15,12 +15,13 @@ from pathlib import Path
 
 # distinctive substring of each canonical SQL → fixture match key
 MATCHES = {
-    "cohort_overrun_by_class": "sum(f.actual)/sum(f.planned)",
+    "cohort_overrun_by_class": "'feature' GROUP BY p.budget_class",
+    "overrun_by_era": "GROUP BY e.era_id, e.name, p.budget_class",
     "sequel_opening_premium": "a.at < p2.released_at + 30",
     "sequel_franchise_decay": "p2.franchise != ''",
-    "release_window_seasonality": "if(toYear(a.at) >= 2021",
+    "release_window_seasonality": "'pre_blockbuster'",
     "overrun_schedule_coupling": "event_type = 'schedule_slip'",
-    "scenario_cohort_windows": "p.budget_usd BETWEEN 10000000 AND 120000000",
+    "scenario_cohort_windows": "p.budget_usd * c.mult_to_2026 BETWEEN",
     "corpus_summary": "GROUP BY status ORDER BY n DESC",
 }
 
@@ -35,13 +36,30 @@ def main() -> int:
     client = LiveClickHouseMCP(settings)
 
     extra_sql = {
+        # must stay textually identical to InstitutionalExecutive._corpus_summary
         "corpus_summary": (
-            "SELECT status, count() AS n, round(sum(budget_usd)/1e6, 1) AS total_budget_m "
-            "FROM genesis_institutional.projects GROUP BY status ORDER BY n DESC"
+            "SELECT status, count() AS n, "
+            "round(sum(p.budget_usd * c.mult_to_2026)/1e9, 2) AS total_budget_2026_b "
+            "FROM genesis_institutional.projects p "
+            "JOIN genesis_institutional.cpi_annual c ON c.year = toYear(p.greenlit_at) "
+            "GROUP BY status ORDER BY n DESC"
         ),
     }
+    all_sql = {**CANONICAL_SQL, **extra_sql}
+    missing = sorted(set(all_sql) - set(MATCHES))
+    if missing:
+        raise SystemExit(f"[fixtures] no MATCHES key for canonical queries: {missing} — "
+                         f"add a distinctive substring for each before recording")
+    for key, match in MATCHES.items():
+        if match not in all_sql[key]:
+            raise SystemExit(f"[fixtures] MATCHES[{key!r}] is not a substring of its own SQL")
+        owners = [k for k, sql in all_sql.items() if match in sql]
+        if owners != [key]:
+            raise SystemExit(f"[fixtures] MATCHES[{key!r}] collides — found in {owners}; "
+                             f"mock replay is substring-based and needs unique keys")
+
     queries = []
-    for key, sql in {**CANONICAL_SQL, **extra_sql}.items():
+    for key, sql in all_sql.items():
         result = client.run_query(sql)
         queries.append({
             "key": key,
@@ -51,7 +69,9 @@ def main() -> int:
         })
         print(f"[fixtures] {key}: {result.row_count} rows")
 
-    tables = [t for t in client.list_tables() if not str(t.get("name", "")).startswith(".inner")]
+    tables = [t for t in client.list_tables()
+              if not str(t.get("name", "")).startswith(".inner")
+              and not str(t.get("name", "")).endswith("_mv")]
     slim_tables = []
     for table in tables:
         slim_tables.append({

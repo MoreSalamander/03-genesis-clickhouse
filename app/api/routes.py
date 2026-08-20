@@ -99,7 +99,10 @@ def corpus() -> dict:
             "UNION ALL SELECT 'audience_performance', count() FROM genesis_institutional.audience_performance "
             "UNION ALL SELECT 'production_events', count() FROM genesis_institutional.production_events "
             "UNION ALL SELECT 'financial_ledger', count() FROM genesis_institutional.financial_ledger "
-            "UNION ALL SELECT 'ops_events', count() FROM genesis_institutional.ops_events"
+            "UNION ALL SELECT 'ops_events', count() FROM genesis_institutional.ops_events "
+            "UNION ALL SELECT 'eras', count() FROM genesis_institutional.eras "
+            "UNION ALL SELECT 'years', toUInt64(max(toYear(released_at)) - 1912 + 1) "
+            "FROM genesis_institutional.projects WHERE released_at IS NOT NULL"
         )
         return {"tables": totals.as_dicts(), "mode": "live"}
     except Exception as err:

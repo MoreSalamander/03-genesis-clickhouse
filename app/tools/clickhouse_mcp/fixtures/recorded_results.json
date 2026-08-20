@@ -2,31 +2,509 @@
  "queries": [
   {
    "key": "cohort_overrun_by_class",
-   "match": "sum(f.actual)/sum(f.planned)",
+   "match": "'feature' GROUP BY p.budget_class",
    "columns": [
     "budget_class",
+    "era",
     "overrun_ratio",
     "n",
+    "n_titles",
     "spend_std"
    ],
    "rows": [
     [
-     "tentpole",
-     1.0998,
-     1840,
-     0.1336
+     "indie",
+     "silent",
+     1.0246,
+     12474,
+     321,
+     0.0448
     ],
     [
      "mid",
-     1.0606,
-     4808,
-     0.0947
+     "silent",
+     1.0283,
+     12636,
+     321,
+     0.0467
+    ],
+    [
+     "tentpole",
+     "silent",
+     1.0404,
+     3186,
+     79,
+     0.0495
     ],
     [
      "indie",
-     1.0318,
-     1048,
-     0.0757
+     "sound_depression",
+     1.0364,
+     3960,
+     94,
+     0.0509
+    ],
+    [
+     "mid",
+     "sound_depression",
+     1.0386,
+     7902,
+     189,
+     0.0537
+    ],
+    [
+     "tentpole",
+     "sound_depression",
+     1.0432,
+     1512,
+     36,
+     0.0574
+    ],
+    [
+     "indie",
+     "golden_age",
+     1.0211,
+     15867,
+     300,
+     0.0407
+    ],
+    [
+     "mid",
+     "golden_age",
+     1.0267,
+     19737,
+     364,
+     0.0414
+    ],
+    [
+     "tentpole",
+     "golden_age",
+     1.0243,
+     6048,
+     110,
+     0.0414
+    ],
+    [
+     "indie",
+     "decree_tv",
+     1.0324,
+     13014,
+     153,
+     0.0464
+    ],
+    [
+     "mid",
+     "decree_tv",
+     1.036,
+     15120,
+     169,
+     0.0488
+    ],
+    [
+     "tentpole",
+     "decree_tv",
+     1.0412,
+     6129,
+     68,
+     0.053
+    ],
+    [
+     "indie",
+     "conglomerate",
+     1.0472,
+     13210,
+     89,
+     0.0796
+    ],
+    [
+     "mid",
+     "conglomerate",
+     1.0505,
+     16430,
+     113,
+     0.0816
+    ],
+    [
+     "tentpole",
+     "conglomerate",
+     1.0755,
+     5290,
+     34,
+     0.1312
+    ],
+    [
+     "indie",
+     "blockbuster",
+     1.0536,
+     11390,
+     68,
+     0.0769
+    ],
+    [
+     "mid",
+     "blockbuster",
+     1.0647,
+     13770,
+     82,
+     0.1129
+    ],
+    [
+     "tentpole",
+     "blockbuster",
+     1.0892,
+     4520,
+     26,
+     0.1822
+    ],
+    [
+     "indie",
+     "home_video",
+     1.0398,
+     12340,
+     74,
+     0.0597
+    ],
+    [
+     "mid",
+     "home_video",
+     1.0498,
+     14310,
+     83,
+     0.0646
+    ],
+    [
+     "tentpole",
+     "home_video",
+     1.0523,
+     3650,
+     21,
+     0.0648
+    ],
+    [
+     "indie",
+     "dvd_peak",
+     1.045,
+     16800,
+     72,
+     0.0635
+    ],
+    [
+     "mid",
+     "dvd_peak",
+     1.0545,
+     24920,
+     113,
+     0.0694
+    ],
+    [
+     "tentpole",
+     "dvd_peak",
+     1.0575,
+     8190,
+     37,
+     0.0737
+    ],
+    [
+     "indie",
+     "streaming_transition",
+     1.0595,
+     21690,
+     94,
+     0.0723
+    ],
+    [
+     "mid",
+     "streaming_transition",
+     1.0648,
+     24170,
+     110,
+     0.0776
+    ],
+    [
+     "tentpole",
+     "streaming_transition",
+     1.0737,
+     8920,
+     40,
+     0.0925
+    ],
+    [
+     "indie",
+     "streaming_wars_covid",
+     1.0748,
+     7270,
+     34,
+     0.088
+    ],
+    [
+     "mid",
+     "streaming_wars_covid",
+     1.098,
+     8551,
+     40,
+     0.1052
+    ],
+    [
+     "tentpole",
+     "streaming_wars_covid",
+     1.0957,
+     2690,
+     11,
+     0.0964
+    ]
+   ]
+  },
+  {
+   "key": "overrun_by_era",
+   "match": "GROUP BY e.era_id, e.name, p.budget_class",
+   "columns": [
+    "era",
+    "budget_class",
+    "overrun_ratio",
+    "n",
+    "n_titles",
+    "spend_std"
+   ],
+   "rows": [
+    [
+     "silent",
+     "indie",
+     1.0248,
+     18306,
+     525,
+     0.0446
+    ],
+    [
+     "silent",
+     "mid",
+     1.0288,
+     18909,
+     539,
+     0.0469
+    ],
+    [
+     "silent",
+     "tentpole",
+     1.0409,
+     5184,
+     149,
+     0.0503
+    ],
+    [
+     "sound_depression",
+     "indie",
+     1.036,
+     5328,
+     139,
+     0.0501
+    ],
+    [
+     "sound_depression",
+     "mid",
+     1.0386,
+     9828,
+     256,
+     0.0532
+    ],
+    [
+     "sound_depression",
+     "tentpole",
+     1.0432,
+     2403,
+     62,
+     0.0551
+    ],
+    [
+     "golden_age",
+     "indie",
+     1.021,
+     18180,
+     378,
+     0.0403
+    ],
+    [
+     "golden_age",
+     "mid",
+     1.0266,
+     22509,
+     457,
+     0.0413
+    ],
+    [
+     "golden_age",
+     "tentpole",
+     1.0243,
+     7191,
+     147,
+     0.0416
+    ],
+    [
+     "decree_tv",
+     "indie",
+     1.0324,
+     13527,
+     172,
+     0.0465
+    ],
+    [
+     "decree_tv",
+     "mid",
+     1.036,
+     15822,
+     195,
+     0.0487
+    ],
+    [
+     "decree_tv",
+     "tentpole",
+     1.0412,
+     6399,
+     78,
+     0.0528
+    ],
+    [
+     "conglomerate",
+     "indie",
+     1.0472,
+     15390,
+     128,
+     0.0795
+    ],
+    [
+     "conglomerate",
+     "mid",
+     1.0508,
+     18410,
+     148,
+     0.0823
+    ],
+    [
+     "conglomerate",
+     "tentpole",
+     1.0749,
+     5820,
+     44,
+     0.128
+    ],
+    [
+     "blockbuster",
+     "indie",
+     1.053,
+     13630,
+     105,
+     0.0762
+    ],
+    [
+     "blockbuster",
+     "mid",
+     1.0637,
+     16440,
+     128,
+     0.1084
+    ],
+    [
+     "blockbuster",
+     "tentpole",
+     1.0877,
+     5200,
+     37,
+     0.1726
+    ],
+    [
+     "home_video",
+     "indie",
+     1.0397,
+     13940,
+     101,
+     0.0596
+    ],
+    [
+     "home_video",
+     "mid",
+     1.0496,
+     16470,
+     120,
+     0.0647
+    ],
+    [
+     "home_video",
+     "tentpole",
+     1.053,
+     4260,
+     33,
+     0.0669
+    ],
+    [
+     "dvd_peak",
+     "indie",
+     1.0451,
+     17310,
+     81,
+     0.0636
+    ],
+    [
+     "dvd_peak",
+     "mid",
+     1.0543,
+     26360,
+     137,
+     0.0692
+    ],
+    [
+     "dvd_peak",
+     "tentpole",
+     1.0576,
+     8670,
+     46,
+     0.0737
+    ],
+    [
+     "streaming_transition",
+     "indie",
+     1.0589,
+     24480,
+     112,
+     0.0717
+    ],
+    [
+     "streaming_transition",
+     "mid",
+     1.0647,
+     26180,
+     124,
+     0.0773
+    ],
+    [
+     "streaming_transition",
+     "tentpole",
+     1.0734,
+     9100,
+     41,
+     0.0919
+    ],
+    [
+     "streaming_wars_covid",
+     "indie",
+     1.0804,
+     10672,
+     57,
+     0.0902
+    ],
+    [
+     "streaming_wars_covid",
+     "mid",
+     1.0999,
+     12806,
+     69,
+     0.1072
+    ],
+    [
+     "streaming_wars_covid",
+     "tentpole",
+     1.1042,
+     4813,
+     24,
+     0.1088
     ]
    ]
   },
@@ -35,22 +513,67 @@
    "match": "a.at < p2.released_at + 30",
    "columns": [
     "is_sequel",
+    "era",
     "open_over_budget",
-    "n",
+    "n_titles",
     "ratio_std"
    ],
    "rows": [
     [
      0,
-     0.253,
-     47,
-     0.1342
+     "home_video",
+     0.6727,
+     1,
+     0.0
+    ],
+    [
+     0,
+     "dvd_peak",
+     0.6015,
+     23,
+     0.2189
+    ],
+    [
+     0,
+     "streaming_transition",
+     1.0958,
+     28,
+     0.7334
+    ],
+    [
+     0,
+     "streaming_wars_covid",
+     0.575,
+     3,
+     0.0609
     ],
     [
      1,
-     0.4116,
-     10,
-     0.2118
+     "home_video",
+     0.3751,
+     4,
+     0.0745
+    ],
+    [
+     1,
+     "dvd_peak",
+     0.9138,
+     45,
+     0.4132
+    ],
+    [
+     1,
+     "streaming_transition",
+     1.3103,
+     56,
+     0.933
+    ],
+    [
+     1,
+     "streaming_wars_covid",
+     1.2798,
+     18,
+     0.861
     ]
    ]
   },
@@ -59,91 +582,145 @@
    "match": "p2.franchise != ''",
    "columns": [
     "is_sequel",
+    "era",
     "tail_share",
-    "n",
+    "n_titles",
     "share_std"
    ],
    "rows": [
     [
      0,
-     0.3705,
-     10,
-     0.0428
+     "home_video",
+     0.5452,
+     1,
+     0.0
+    ],
+    [
+     0,
+     "dvd_peak",
+     0.5739,
+     23,
+     0.0392
+    ],
+    [
+     0,
+     "streaming_transition",
+     0.4814,
+     28,
+     0.0701
+    ],
+    [
+     0,
+     "streaming_wars_covid",
+     0.2768,
+     2,
+     0.0315
     ],
     [
      1,
-     0.2848,
-     10,
-     0.1088
+     "home_video",
+     0.4912,
+     4,
+     0.0126
+    ],
+    [
+     1,
+     "dvd_peak",
+     0.5239,
+     45,
+     0.0341
+    ],
+    [
+     1,
+     "streaming_transition",
+     0.4189,
+     56,
+     0.0882
+    ],
+    [
+     1,
+     "streaming_wars_covid",
+     0.2507,
+     11,
+     0.0482
     ]
    ]
   },
   {
    "key": "release_window_seasonality",
-   "match": "if(toYear(a.at) >= 2021",
+   "match": "'pre_blockbuster'",
    "columns": [
     "release_window",
     "daily_revenue",
     "n",
+    "n_titles",
     "revenue_std",
     "era"
    ],
    "rows": [
     [
      "Q1",
-     2498.91,
-     14400,
-     6188.29,
-     "post2021"
+     503924.51,
+     6950,
+     108,
+     1259998.45,
+     "blockbuster_era"
     ],
     [
      "Q1",
-     8678.23,
-     14400,
-     20233.84,
-     "pre2021"
+     33238.16,
+     22913,
+     831,
+     94392.19,
+     "pre_blockbuster"
     ],
     [
      "Q2",
-     9533.98,
-     36064,
-     25122.79,
-     "post2021"
+     768182.65,
+     16484,
+     266,
+     2161274.87,
+     "blockbuster_era"
     ],
     [
      "Q2",
-     6132.0,
-     23040,
-     15277.9,
-     "pre2021"
+     34998.36,
+     19569,
+     708,
+     120755.37,
+     "pre_blockbuster"
     ],
     [
      "Q3",
-     4695.16,
-     23040,
-     10138.77,
-     "post2021"
+     820338.13,
+     17144,
+     273,
+     2456525.11,
+     "blockbuster_era"
     ],
     [
      "Q3",
-     6398.26,
-     14400,
-     15040.63,
-     "pre2021"
+     24969.05,
+     15216,
+     550,
+     69619.95,
+     "pre_blockbuster"
     ],
     [
      "Q4",
-     5013.41,
-     28640,
-     11303.15,
-     "post2021"
+     690444.17,
+     15444,
+     251,
+     1969786.1,
+     "blockbuster_era"
     ],
     [
      "Q4",
-     7319.32,
-     5920,
-     13936.47,
-     "pre2021"
+     35019.23,
+     34395,
+     1244,
+     104092.25,
+     "pre_blockbuster"
     ]
    ]
   },
@@ -152,34 +729,227 @@
    "match": "event_type = 'schedule_slip'",
    "columns": [
     "budget_class",
+    "era",
     "avg_slip_days",
-    "n",
+    "n_titles",
     "slip_std"
    ],
    "rows": [
     [
      "tentpole",
-     104.21,
-     14,
-     37.14
+     "silent",
+     7.72,
+     134,
+     5.25
     ],
     [
      "mid",
-     63.86,
-     35,
-     29.75
+     "silent",
+     6.52,
+     437,
+     4.49
     ],
     [
      "indie",
-     35.87,
-     10,
-     17.5
+     "silent",
+     5.75,
+     412,
+     4.09
+    ],
+    [
+     "tentpole",
+     "sound_depression",
+     8.59,
+     59,
+     5.26
+    ],
+    [
+     "mid",
+     "sound_depression",
+     8.46,
+     222,
+     5.29
+    ],
+    [
+     "indie",
+     "sound_depression",
+     7.34,
+     113,
+     5.24
+    ],
+    [
+     "tentpole",
+     "golden_age",
+     5.22,
+     129,
+     3.2
+    ],
+    [
+     "mid",
+     "golden_age",
+     4.25,
+     385,
+     2.82
+    ],
+    [
+     "indie",
+     "golden_age",
+     3.34,
+     240,
+     2.21
+    ],
+    [
+     "tentpole",
+     "decree_tv",
+     11.38,
+     77,
+     7.88
+    ],
+    [
+     "mid",
+     "decree_tv",
+     8.93,
+     173,
+     5.53
+    ],
+    [
+     "indie",
+     "decree_tv",
+     8.27,
+     147,
+     5.5
+    ],
+    [
+     "tentpole",
+     "conglomerate",
+     20.26,
+     43,
+     14.83
+    ],
+    [
+     "indie",
+     "conglomerate",
+     15.64,
+     114,
+     9.77
+    ],
+    [
+     "mid",
+     "conglomerate",
+     15.51,
+     136,
+     9.36
+    ],
+    [
+     "mid",
+     "blockbuster",
+     18.28,
+     118,
+     12.25
+    ],
+    [
+     "tentpole",
+     "blockbuster",
+     15.18,
+     37,
+     11.69
+    ],
+    [
+     "indie",
+     "blockbuster",
+     14.84,
+     98,
+     8.19
+    ],
+    [
+     "tentpole",
+     "home_video",
+     13.17,
+     29,
+     8.47
+    ],
+    [
+     "mid",
+     "home_video",
+     11.69,
+     117,
+     7.34
+    ],
+    [
+     "indie",
+     "home_video",
+     11.67,
+     96,
+     6.96
+    ],
+    [
+     "tentpole",
+     "dvd_peak",
+     16.3,
+     45,
+     7.32
+    ],
+    [
+     "mid",
+     "dvd_peak",
+     13.84,
+     131,
+     7.91
+    ],
+    [
+     "indie",
+     "dvd_peak",
+     12.27,
+     75,
+     8.47
+    ],
+    [
+     "tentpole",
+     "streaming_transition",
+     18.5,
+     40,
+     9.61
+    ],
+    [
+     "mid",
+     "streaming_transition",
+     15.99,
+     122,
+     9.89
+    ],
+    [
+     "indie",
+     "streaming_transition",
+     15.46,
+     108,
+     9.02
+    ],
+    [
+     "tentpole",
+     "streaming_wars_covid",
+     20.46,
+     22,
+     9.64
+    ],
+    [
+     "mid",
+     "streaming_wars_covid",
+     19.1,
+     63,
+     12.02
+    ],
+    [
+     "indie",
+     "streaming_wars_covid",
+     18.2,
+     52,
+     11.21
     ]
    ]
   },
   {
    "key": "scenario_cohort_windows",
-   "match": "p.budget_usd BETWEEN 10000000 AND 120000000",
+   "match": "p.budget_usd * c.mult_to_2026 BETWEEN",
    "columns": [
     "release_window",
     "title",
@@ -188,153 +958,1003 @@
    "rows": [
     [
      "Q1",
-     "Crimson Meridian",
-     0.7398
+     "Overture of the Valley",
+     0.3574
     ],
     [
      "Q1",
-     "Deep Signal 2",
-     0.891
+     "Voyage in Winter (2015)",
+     0.4546
     ],
     [
      "Q1",
-     "Wild Vigil",
-     1.1208
+     "The Thundering Signal",
+     0.4708
     ],
     [
      "Q1",
-     "Winterlight",
-     1.6895
+     "Voyage in Winter: Ascendant",
+     0.4817
     ],
     [
      "Q1",
-     "Nebula Frontier 2",
-     1.8973
+     "Voyage in Winter: The Reckoning",
+     0.5399
+    ],
+    [
+     "Q1",
+     "The Carnival at Midnight",
+     0.6346
+    ],
+    [
+     "Q1",
+     "Regiment under Glass",
+     0.7144
+    ],
+    [
+     "Q1",
+     "The Frontier on the River",
+     0.7214
+    ],
+    [
+     "Q1",
+     "The Passage of the Interior",
+     0.9151
+    ],
+    [
+     "Q1",
+     "Iron Tempest: Legacy",
+     0.9332
+    ],
+    [
+     "Q1",
+     "The Testament on the River",
+     1.0932
+    ],
+    [
+     "Q1",
+     "Emerald Matinee",
+     1.115
+    ],
+    [
+     "Q1",
+     "Carnival of the Coast",
+     1.1243
+    ],
+    [
+     "Q1",
+     "Parade on the Frontier",
+     1.1307
+    ],
+    [
+     "Q1",
+     "Painted Fortune",
+     1.1614
+    ],
+    [
+     "Q1",
+     "The Electric Harbor",
+     1.1923
+    ],
+    [
+     "Q1",
+     "The Quiet Ballroom",
+     1.267
+    ],
+    [
+     "Q1",
+     "The Burning Intermission",
+     1.2678
+    ],
+    [
+     "Q1",
+     "The Reckless Bargain",
+     1.2935
+    ],
+    [
+     "Q1",
+     "The Machine at Dawn",
+     1.3757
+    ],
+    [
+     "Q1",
+     "Marble Reckoning",
+     1.4054
+    ],
+    [
+     "Q1",
+     "The Scarlet Carnival (2020)",
+     1.4237
+    ],
+    [
+     "Q1",
+     "The Electric Signal",
+     1.4258
+    ],
+    [
+     "Q1",
+     "Hollow Divide",
+     1.4663
+    ],
+    [
+     "Q1",
+     "Ashen Furlough",
+     1.4694
+    ],
+    [
+     "Q1",
+     "Gentle Empire",
+     1.4893
+    ],
+    [
+     "Q1",
+     "The Machine of the Silver Coast",
+     1.5019
+    ],
+    [
+     "Q1",
+     "Golden Parade",
+     1.534
+    ],
+    [
+     "Q1",
+     "Broken Overture (2009)",
+     1.6043
+    ],
+    [
+     "Q1",
+     "Fading Covenant",
+     1.6242
+    ],
+    [
+     "Q1",
+     "The Scarlet Carnival: Legacy",
+     1.6433
+    ],
+    [
+     "Q1",
+     "The Painted Vigil",
+     1.6608
+    ],
+    [
+     "Q1",
+     "Burning Masquerade",
+     1.7257
+    ],
+    [
+     "Q1",
+     "The Sentinel at Dawn",
+     1.7316
+    ],
+    [
+     "Q1",
+     "The Waltz of the Valley",
+     1.7586
+    ],
+    [
+     "Q1",
+     "Scarlet Vigil",
+     1.7703
+    ],
+    [
+     "Q1",
+     "The Restless Country",
+     1.8431
+    ],
+    [
+     "Q1",
+     "Radiant Furlough (1997)",
+     1.8547
+    ],
+    [
+     "Q1",
+     "Broken Overture: The Reckoning",
+     1.8904
+    ],
+    [
+     "Q1",
+     "The Divide beyond the Ridge",
+     1.9036
+    ],
+    [
+     "Q1",
+     "The Country of the Republic",
+     1.9112
+    ],
+    [
+     "Q1",
+     "Radiant Waltz",
+     1.9153
+    ],
+    [
+     "Q1",
+     "The Scarlet Harbor",
+     1.9728
+    ],
+    [
+     "Q1",
+     "Lantern of the Valley",
+     2.0178
+    ],
+    [
+     "Q1",
+     "The Stolen Meridian",
+     2.0234
+    ],
+    [
+     "Q1",
+     "Payroll at Midnight",
+     2.0464
+    ],
+    [
+     "Q1",
+     "Ballroom of the Valley",
+     2.0653
+    ],
+    [
+     "Q1",
+     "Nameless Orchard",
+     2.1528
+    ],
+    [
+     "Q1",
+     "Burning Carnival",
+     2.1819
+    ],
+    [
+     "Q1",
+     "The Painted Bargain",
+     2.2104
     ],
     [
      "Q2",
-     "Iron Divide",
-     0.1303
+     "The Machine of the Interior IV",
+     0.4552
     ],
     [
      "Q2",
-     "Neon Summer",
-     0.5241
+     "The Reckoning of Fortune",
+     0.4839
     ],
     [
      "Q2",
-     "Broken Country",
-     0.6512
+     "The Machine of the Interior III",
+     0.6505
     ],
     [
      "Q2",
-     "Electric Passage",
-     1.0216
+     "Crossing beyond the Ridge",
+     0.7528
     ],
     [
      "Q2",
-     "Iron Tempest",
-     1.1845
+     "The Radiant Harbor",
+     0.7784
     ],
     [
      "Q2",
-     "Iron Tempest 2",
-     1.4077
+     "The Golden Serenade",
+     0.8849
     ],
     [
      "Q2",
-     "Paper Kingdoms 2",
-     1.4387
+     "Gilded Overture",
+     0.9152
     ],
     [
      "Q2",
-     "Echo Protocol",
-     2.0508
+     "Regiment at Midnight",
+     0.9524
     ],
     [
      "Q2",
-     "Winterlight 2",
-     2.763
+     "The Scarlet Dispatch",
+     0.9769
+    ],
+    [
+     "Q2",
+     "The Machine of the Interior II",
+     0.98
+    ],
+    [
+     "Q2",
+     "Stolen Overture",
+     0.9962
+    ],
+    [
+     "Q2",
+     "Roaring Dispatch",
+     1.0087
+    ],
+    [
+     "Q2",
+     "Signal of the Deep",
+     1.0105
+    ],
+    [
+     "Q2",
+     "The Prairie of the Republic",
+     1.0249
+    ],
+    [
+     "Q2",
+     "Empire on the River",
+     1.0484
+    ],
+    [
+     "Q2",
+     "The Roaring Testament",
+     1.1045
+    ],
+    [
+     "Q2",
+     "Scarlet Serenade",
+     1.151
+    ],
+    [
+     "Q2",
+     "Fortune at Dawn",
+     1.1707
+    ],
+    [
+     "Q2",
+     "Radiant Overture",
+     1.23
+    ],
+    [
+     "Q2",
+     "The Crossing of the Republic: Crownfall",
+     1.2372
+    ],
+    [
+     "Q2",
+     "Burning Matinee",
+     1.2506
+    ],
+    [
+     "Q2",
+     "The Voyage in Exile (2014)",
+     1.3358
+    ],
+    [
+     "Q2",
+     "Hollow Encore",
+     1.3599
+    ],
+    [
+     "Q2",
+     "Canyon on the Wire",
+     1.3724
+    ],
+    [
+     "Q2",
+     "The Wild Crossing",
+     1.3778
+    ],
+    [
+     "Q2",
+     "The Sentinel beyond the Ridge",
+     1.3823
+    ],
+    [
+     "Q2",
+     "Nebula Frontier: Ascension",
+     1.409
+    ],
+    [
+     "Q2",
+     "The Savage Waltz II",
+     1.4432
+    ],
+    [
+     "Q2",
+     "The First Prairie III",
+     1.4439
+    ],
+    [
+     "Q2",
+     "Carnival in Winter",
+     1.493
+    ],
+    [
+     "Q2",
+     "Roaring Reckoning",
+     1.507
+    ],
+    [
+     "Q2",
+     "The Premiere at Midnight II",
+     1.5092
+    ],
+    [
+     "Q2",
+     "Endless Overture",
+     1.5151
+    ],
+    [
+     "Q2",
+     "Empire on the Frontier",
+     1.5229
+    ],
+    [
+     "Q2",
+     "The Horizon of the West",
+     1.5292
+    ],
+    [
+     "Q2",
+     "Cavalcade of Two Cities",
+     1.5391
+    ],
+    [
+     "Q2",
+     "Reckoning on the River",
+     1.557
+    ],
+    [
+     "Q2",
+     "The Shattered Overture",
+     1.5774
+    ],
+    [
+     "Q2",
+     "Divide of the Republic",
+     1.608
+    ],
+    [
+     "Q2",
+     "The Crossing of the Republic (2010)",
+     1.6087
+    ],
+    [
+     "Q2",
+     "The Crimson Boulevard",
+     1.6389
+    ],
+    [
+     "Q2",
+     "Masquerade on the Wire",
+     1.6457
+    ],
+    [
+     "Q2",
+     "The Wandering Matinee",
+     1.6551
+    ],
+    [
+     "Q2",
+     "Radiant Sentinel (1997)",
+     1.7022
+    ],
+    [
+     "Q2",
+     "The Silent Gamble",
+     1.7046
+    ],
+    [
+     "Q2",
+     "The Crossing of the Republic: Ascendant",
+     1.7398
+    ],
+    [
+     "Q2",
+     "The Country of the Deep",
+     1.7523
+    ],
+    [
+     "Q2",
+     "Canyon of the Silver Coast",
+     1.7556
+    ],
+    [
+     "Q2",
+     "Garden in Exile",
+     1.7568
+    ],
+    [
+     "Q2",
+     "The Thundering Armistice",
+     1.7757
     ],
     [
      "Q3",
-     "Shattered Garden",
-     0.3986
+     "Midnight Boulevard IV",
+     0.392
     ],
     [
      "Q3",
-     "Quiet Vigil",
-     0.5902
+     "The Machine on the Wire",
+     0.5129
     ],
     [
      "Q3",
-     "Crimson Meridian 2",
-     0.8868
+     "Midnight Boulevard III",
+     0.5874
     ],
     [
      "Q3",
-     "Quiet Empire",
-     0.9559
+     "The Payroll of the Coast IV",
+     0.6115
     ],
     [
      "Q3",
-     "Broken Passage",
-     0.9931
+     "The Thundering Cathedral",
+     0.635
     ],
     [
      "Q3",
-     "Paper Kingdoms",
-     1.1279
+     "Meridian at Dawn (2013)",
+     0.6728
     ],
     [
      "Q3",
-     "Midnight Harbor",
-     1.1571
+     "Meridian at Dawn: Ascendant",
+     0.6877
     ],
     [
      "Q3",
-     "Midnight Harbor 2",
-     1.2328
+     "Emerald Bargain",
+     0.6889
     ],
     [
      "Q3",
-     "Broken Horizon",
-     1.2623
+     "The Harvest of the Silver Coast",
+     0.698
     ],
     [
      "Q3",
-     "Echo Protocol 2",
-     1.3196
+     "Thundering Orchard",
+     0.7302
     ],
     [
      "Q3",
-     "Nebula Frontier",
-     1.4029
+     "Leviathan: Requiem",
+     0.7459
+    ],
+    [
+     "Q3",
+     "Savage Waltz IV",
+     0.7714
+    ],
+    [
+     "Q3",
+     "Savage Lantern",
+     0.8214
+    ],
+    [
+     "Q3",
+     "Testament on the Wire",
+     0.8443
+    ],
+    [
+     "Q3",
+     "Midnight Boulevard II",
+     0.8572
+    ],
+    [
+     "Q3",
+     "Meridian at Dawn: The Reckoning",
+     0.9027
+    ],
+    [
+     "Q3",
+     "Gilded Regiment",
+     0.9361
+    ],
+    [
+     "Q3",
+     "Electric Matinee: Crownfall",
+     0.9399
+    ],
+    [
+     "Q3",
+     "The Quiet Intermission",
+     1.0245
+    ],
+    [
+     "Q3",
+     "The Roaring Lantern (2006)",
+     1.057
+    ],
+    [
+     "Q3",
+     "The Roaring Lantern: Crownfall",
+     1.0682
+    ],
+    [
+     "Q3",
+     "The Payroll of the Coast III",
+     1.0778
+    ],
+    [
+     "Q3",
+     "Junction of Yesterday",
+     1.088
+    ],
+    [
+     "Q3",
+     "The Empire in Winter (2019)",
+     1.092
+    ],
+    [
+     "Q3",
+     "The Reckless Passage",
+     1.0946
+    ],
+    [
+     "Q3",
+     "The Roaring Lantern: Ascendant",
+     1.0947
+    ],
+    [
+     "Q3",
+     "The Waltz in Winter: Crownfall",
+     1.1125
+    ],
+    [
+     "Q3",
+     "The Waltz in Winter (2005)",
+     1.1652
+    ],
+    [
+     "Q3",
+     "Broken Sentinel",
+     1.1941
+    ],
+    [
+     "Q3",
+     "The Waltz in Winter: The Reckoning",
+     1.225
+    ],
+    [
+     "Q3",
+     "The Fading Masquerade",
+     1.2389
+    ],
+    [
+     "Q3",
+     "Electric Matinee (2011)",
+     1.2395
+    ],
+    [
+     "Q3",
+     "Savage Waltz III",
+     1.2447
+    ],
+    [
+     "Q3",
+     "The Gamble after the War",
+     1.2663
+    ],
+    [
+     "Q3",
+     "Gentle Divide (2001)",
+     1.2693
+    ],
+    [
+     "Q3",
+     "The Marble Machine",
+     1.2756
+    ],
+    [
+     "Q3",
+     "The Distant Country: Ascendant",
+     1.2858
+    ],
+    [
+     "Q3",
+     "Silent Waltz (2007)",
+     1.2863
+    ],
+    [
+     "Q3",
+     "The Waltz in Winter: Ascendant",
+     1.2866
+    ],
+    [
+     "Q3",
+     "Distant Matinee",
+     1.3094
+    ],
+    [
+     "Q3",
+     "The Gentle Gamble",
+     1.313
+    ],
+    [
+     "Q3",
+     "The Roaring Lantern: The Reckoning",
+     1.3197
+    ],
+    [
+     "Q3",
+     "Endless Bargain",
+     1.3436
+    ],
+    [
+     "Q3",
+     "The Hollow Vigil",
+     1.3633
+    ],
+    [
+     "Q3",
+     "The Matinee of Yesterday",
+     1.3823
+    ],
+    [
+     "Q3",
+     "The Midnight Dispatch",
+     1.4036
+    ],
+    [
+     "Q3",
+     "The Crimson Empire",
+     1.4236
+    ],
+    [
+     "Q3",
+     "Crossing of Two Cities",
+     1.4311
+    ],
+    [
+     "Q3",
+     "Dispatch on the Frontier",
+     1.4335
+    ],
+    [
+     "Q3",
+     "Boulevard of the Republic",
+     1.4398
     ],
     [
      "Q4",
-     "Golden Reckoning",
-     0.4434
+     "Gamble under Glass III",
+     0.2059
     ],
     [
      "Q4",
-     "Iron Orchard",
-     0.8675
+     "Neon Vigil IV",
+     0.2524
     ],
     [
      "Q4",
-     "Quiet Country",
-     1.4179
+     "The Hollow Crossing",
+     0.2822
     ],
     [
      "Q4",
-     "Deep Signal",
-     1.7018
+     "Winter Signal",
+     0.344
     ],
     [
      "Q4",
-     "Distant Machine",
-     1.8817
+     "Neon Vigil III",
+     0.3648
+    ],
+    [
+     "Q4",
+     "The Midnight Orchard",
+     0.4172
+    ],
+    [
+     "Q4",
+     "The Savage Intermission IV",
+     0.4363
+    ],
+    [
+     "Q4",
+     "The Ballroom after the War III",
+     0.5823
+    ],
+    [
+     "Q4",
+     "Harbor in Exile",
+     0.6313
+    ],
+    [
+     "Q4",
+     "The Savage Intermission III",
+     0.7693
+    ],
+    [
+     "Q4",
+     "The Quiet Payroll",
+     0.7941
+    ],
+    [
+     "Q4",
+     "The Premiere of the Republic",
+     0.808
+    ],
+    [
+     "Q4",
+     "The Crossing under Glass",
+     0.8268
+    ],
+    [
+     "Q4",
+     "Hidden Matinee",
+     0.8769
+    ],
+    [
+     "Q4",
+     "Neon Frontier III",
+     0.8781
+    ],
+    [
+     "Q4",
+     "The Covenant in Exile",
+     0.9237
+    ],
+    [
+     "Q4",
+     "Golden Regiment",
+     0.9533
+    ],
+    [
+     "Q4",
+     "The Ballroom after the War II",
+     1.0083
+    ],
+    [
+     "Q4",
+     "The Ballroom beyond the Ridge",
+     1.0252
+    ],
+    [
+     "Q4",
+     "Last Parade",
+     1.0271
+    ],
+    [
+     "Q4",
+     "Quiet Summer",
+     1.0417
+    ],
+    [
+     "Q4",
+     "Wandering Harvest",
+     1.0482
+    ],
+    [
+     "Q4",
+     "Carnival at the Fairgrounds: Legacy",
+     1.1124
+    ],
+    [
+     "Q4",
+     "Ashen Canyon",
+     1.1235
+    ],
+    [
+     "Q4",
+     "The Savage Intermission II",
+     1.1327
+    ],
+    [
+     "Q4",
+     "Wild Lantern",
+     1.156
+    ],
+    [
+     "Q4",
+     "Cathedral of Yesterday",
+     1.1641
+    ],
+    [
+     "Q4",
+     "Passage of the Deep",
+     1.2287
+    ],
+    [
+     "Q4",
+     "The Intermission of the Republic",
+     1.2504
+    ],
+    [
+     "Q4",
+     "The Reckless Country",
+     1.2529
+    ],
+    [
+     "Q4",
+     "The Divide of the Century",
+     1.2732
+    ],
+    [
+     "Q4",
+     "Iron Matinee",
+     1.2785
+    ],
+    [
+     "Q4",
+     "Gamble of the Silver Coast",
+     1.3213
+    ],
+    [
+     "Q4",
+     "Compass on the River: The Reckoning",
+     1.3249
+    ],
+    [
+     "Q4",
+     "First Canyon",
+     1.37
+    ],
+    [
+     "Q4",
+     "Neon Frontier II",
+     1.398
+    ],
+    [
+     "Q4",
+     "Scarlet Bargain",
+     1.4269
+    ],
+    [
+     "Q4",
+     "Distant Ballroom",
+     1.4798
+    ],
+    [
+     "Q4",
+     "The Intermission after the War",
+     1.4926
+    ],
+    [
+     "Q4",
+     "Hidden Empire",
+     1.5401
+    ],
+    [
+     "Q4",
+     "Sentinel of the Coast: Crownfall",
+     1.5679
+    ],
+    [
+     "Q4",
+     "Compass on the River (2015)",
+     1.5788
+    ],
+    [
+     "Q4",
+     "Carnival at the Fairgrounds (2022)",
+     1.5839
+    ],
+    [
+     "Q4",
+     "The Encore of the Interior",
+     1.5962
+    ],
+    [
+     "Q4",
+     "The Gentle Machine (2007)",
+     1.6034
+    ],
+    [
+     "Q4",
+     "Savage Sentinel",
+     1.6119
+    ],
+    [
+     "Q4",
+     "The Gentle Parade",
+     1.6225
+    ],
+    [
+     "Q4",
+     "Crimson Carnival (1996)",
+     1.6444
+    ],
+    [
+     "Q4",
+     "The Passage on the River",
+     1.7019
+    ],
+    [
+     "Q4",
+     "Sentinel of the Coast (2000)",
+     1.7033
     ]
    ]
   },
@@ -344,23 +1964,23 @@
    "columns": [
     "status",
     "n",
-    "total_budget_m"
+    "total_budget_2026_b"
    ],
    "rows": [
     [
      "released",
-     57,
-     1864.8
+     4623,
+     103.64
     ],
     [
      "in_production",
-     4,
-     178.3
+     8,
+     0.56
     ],
     [
      "cancelled",
      1,
-     108.3
+     0.21
     ]
    ]
   }
@@ -368,8 +1988,8 @@
  "tables": [
   {
    "name": "audience_monthly",
-   "comment": "",
-   "total_rows": 9233,
+   "comment": "Monthly audience rollup by channel (target table of audience_monthly_mv). A century of trend questions belongs here, not on 76M daily rows.",
+   "total_rows": 1539023,
    "columns": [
     {
      "name": "project_id",
@@ -377,10 +1997,10 @@
     },
     {
      "name": "month",
-     "column_type": "Date"
+     "column_type": "Date32"
     },
     {
-     "name": "platform",
+     "name": "channel",
      "column_type": "LowCardinality(String)"
     },
     {
@@ -396,15 +2016,15 @@
      "column_type": "Float64"
     },
     {
-     "name": "samples",
+     "name": "completion_n",
      "column_type": "UInt64"
     }
    ]
   },
   {
    "name": "audience_performance",
-   "comment": "",
-   "total_rows": 4353266,
+   "comment": "Revenue and consumption by channel/territory across the century. Home video EXCEEDS theatrical from ~1986; DVD peaks 2004 then collapses; 2020 theatrical craters; Convergence+ launches 2020-07 with the whole vault.",
+   "total_rows": 91292670,
    "columns": [
     {
      "name": "project_id",
@@ -412,11 +2032,15 @@
     },
     {
      "name": "title",
-     "column_type": "String"
+     "column_type": "LowCardinality(String)"
     },
     {
      "name": "at",
-     "column_type": "Date"
+     "column_type": "Date32"
+    },
+    {
+     "name": "channel",
+     "column_type": "LowCardinality(String)"
     },
     {
      "name": "platform",
@@ -432,7 +2056,7 @@
     },
     {
      "name": "completion",
-     "column_type": "Float32"
+     "column_type": "Nullable(Float32)"
     },
     {
      "name": "revenue",
@@ -441,9 +2065,28 @@
    ]
   },
   {
+   "name": "cpi_annual",
+   "comment": "Annual deflator. ALL money in this corpus is nominal — cross-era money comparisons are meaningless without this join.",
+   "total_rows": 115,
+   "columns": [
+    {
+     "name": "year",
+     "column_type": "UInt16"
+    },
+    {
+     "name": "cpi",
+     "column_type": "Float64"
+    },
+    {
+     "name": "mult_to_2026",
+     "column_type": "Float64"
+    }
+   ]
+  },
+  {
    "name": "distribution_events",
-   "comment": "",
-   "total_rows": 806,
+   "comment": "Deals, openings, window events, and release moves (the 2023 double strike moved tentpoles by most of a year).",
+   "total_rows": 43996,
    "columns": [
     {
      "name": "project_id",
@@ -451,7 +2094,7 @@
     },
     {
      "name": "at",
-     "column_type": "Date"
+     "column_type": "Date32"
     },
     {
      "name": "event_type",
@@ -472,9 +2115,36 @@
    ]
   },
   {
+   "name": "eras",
+   "comment": "The ten industry eras 1912-2026. Join facts on at BETWEEN start_date AND end_date for era splits — a finding stable across eras is institutional truth; one era only is a regime.",
+   "total_rows": 10,
+   "columns": [
+    {
+     "name": "era_id",
+     "column_type": "UInt8"
+    },
+    {
+     "name": "name",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "start_date",
+     "column_type": "Date32"
+    },
+    {
+     "name": "end_date",
+     "column_type": "Date32"
+    },
+    {
+     "name": "summary",
+     "column_type": "String"
+    }
+   ]
+  },
+  {
    "name": "financial_ledger",
-   "comment": "",
-   "total_rows": 7696,
+   "comment": "Planned vs actual per cost center per month, 1912-2026, nominal dollars (join cpi_annual to compare eras).",
+   "total_rows": 393537,
    "columns": [
     {
      "name": "project_id",
@@ -482,7 +2152,7 @@
     },
     {
      "name": "at",
-     "column_type": "Date"
+     "column_type": "Date32"
     },
     {
      "name": "cost_center",
@@ -504,8 +2174,8 @@
   },
   {
    "name": "financial_monthly",
-   "comment": "",
-   "total_rows": 22656,
+   "comment": "Monthly ledger rollup (target table of financial_monthly_mv). Prefer this to full financial_ledger sweeps for trend scans.",
+   "total_rows": 387319,
    "columns": [
     {
      "name": "project_id",
@@ -513,7 +2183,7 @@
     },
     {
      "name": "month",
-     "column_type": "Date"
+     "column_type": "Date32"
     },
     {
      "name": "cost_center",
@@ -530,9 +2200,44 @@
    ]
   },
   {
+   "name": "franchises",
+   "comment": "Franchises and cycles across the century. The monster cycle (1931-48) carries the complete fatigue curve; modern cycles open bigger and die faster — both readings are in the data.",
+   "total_rows": 159,
+   "columns": [
+    {
+     "name": "franchise_id",
+     "column_type": "String"
+    },
+    {
+     "name": "name",
+     "column_type": "String"
+    },
+    {
+     "name": "cycle_type",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "started_year",
+     "column_type": "UInt16"
+    },
+    {
+     "name": "ended_year",
+     "column_type": "Nullable(UInt16)"
+    },
+    {
+     "name": "n_entries",
+     "column_type": "UInt8"
+    },
+    {
+     "name": "notes",
+     "column_type": "String"
+    }
+   ]
+  },
+  {
    "name": "ops_events",
    "comment": "",
-   "total_rows": null,
+   "total_rows": 63,
    "columns": [
     {
      "name": "at",
@@ -554,8 +2259,8 @@
   },
   {
    "name": "production_events",
-   "comment": "",
-   "total_rows": 367119,
+   "comment": "Shoot-window telemetry per project per day. Strike windows and the COVID halt appear as gaps and strike_pause events. Slips co-move with overruns.",
+   "total_rows": 12645503,
    "columns": [
     {
      "name": "project_id",
@@ -563,7 +2268,7 @@
     },
     {
      "name": "at",
-     "column_type": "DateTime"
+     "column_type": "DateTime64(0)"
     },
     {
      "name": "dept",
@@ -585,8 +2290,8 @@
   },
   {
    "name": "projects",
-   "comment": "",
-   "total_rows": 62,
+   "comment": "~4,600 productions of Convergence Studios, founded 1912 — features, shorts, serials, TV movies, streaming originals.",
+   "total_rows": 4632,
    "columns": [
     {
      "name": "project_id",
@@ -597,12 +2302,20 @@
      "column_type": "String"
     },
     {
-     "name": "type",
+     "name": "project_type",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "division",
      "column_type": "LowCardinality(String)"
     },
     {
      "name": "genre",
      "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "era_id",
+     "column_type": "UInt8"
     },
     {
      "name": "budget_class",
@@ -614,11 +2327,11 @@
     },
     {
      "name": "greenlit_at",
-     "column_type": "Date"
+     "column_type": "Date32"
     },
     {
      "name": "released_at",
-     "column_type": "Nullable(Date)"
+     "column_type": "Nullable(Date32)"
     },
     {
      "name": "release_window",
@@ -633,8 +2346,75 @@
      "column_type": "LowCardinality(String)"
     },
     {
+     "name": "franchise_id",
+     "column_type": "String"
+    },
+    {
+     "name": "entry_number",
+     "column_type": "UInt8"
+    },
+    {
+     "name": "sound_format",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "color_format",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "aspect",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "shoot_days_planned",
+     "column_type": "UInt16"
+    },
+    {
+     "name": "shoot_days_actual",
+     "column_type": "UInt16"
+    },
+    {
      "name": "status",
      "column_type": "LowCardinality(String)"
+    }
+   ]
+  },
+  {
+   "name": "shock_calendar",
+   "comment": "The century's weather: influenza 1918, Depression + receivership, wartime caps and boom, the strike calendar through 2023, COVID. Joins explain the dents.",
+   "total_rows": 15,
+   "columns": [
+    {
+     "name": "shock_id",
+     "column_type": "String"
+    },
+    {
+     "name": "name",
+     "column_type": "String"
+    },
+    {
+     "name": "kind",
+     "column_type": "LowCardinality(String)"
+    },
+    {
+     "name": "start_date",
+     "column_type": "Date32"
+    },
+    {
+     "name": "end_date",
+     "column_type": "Date32"
+    },
+    {
+     "name": "production_halt",
+     "column_type": "UInt8"
+    },
+    {
+     "name": "cost_mult",
+     "column_type": "Float32"
+    },
+    {
+     "name": "attendance_mult",
+     "column_type": "Float32"
     }
    ]
   }
